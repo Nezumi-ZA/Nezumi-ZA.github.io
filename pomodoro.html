@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pomodoro Timer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* slate-50 */
+            color: #334155; /* slate-700 */
+        }
+        .container-box {
+            background-color: white;
+            border-radius: 1.5rem; /* More rounded corners */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            padding: 2.5rem;
+        }
+        .input-field {
+            background-color: #f1f5f9; /* slate-100 */
+            border: 1px solid #cbd5e1; /* slate-300 */
+            border-radius: 0.75rem;
+            padding: 0.75rem 1rem;
+            color: #1e293b; /* slate-900 */
+            font-size: 1.125rem;
+            text-align: center;
+            width: 100%;
+        }
+        .button-primary {
+            background-image: linear-gradient(to right, #0d9488, #14b8a6); /* teal-600 to teal-500 */
+            color: white;
+            font-weight: 600;
+            padding: 0.75rem 2rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
+            transition: transform 0.1s ease-in-out, box-shadow 0.1s ease-in-out;
+            border: none;
+        }
+        .button-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 10px -1px rgba(0, 0, 0, 0.15), 0 3px 6px -2px rgba(0, 0, 0, 0.08);
+        }
+        .button-primary:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.06);
+        }
+        .button-secondary {
+            background-color: #64748b; /* slate-500 */
+            color: white;
+            font-weight: 600;
+            padding: 0.75rem 2rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
+            transition: transform 0.1s ease-in-out, box-shadow 0.1s ease-in-out;
+            border: none;
+        }
+        .button-secondary:hover {
+            background-color: #475569; /* slate-600 */
+            transform: translateY(-2px);
+            box-shadow: 0 6px 10px -1px rgba(0, 0, 0, 0.15), 0 3px 6px -2px rgba(0, 0, 0, 0.08);
+        }
+        .button-secondary:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.06);
+        }
+        .llm-response-box {
+            background-color: #ecfeff; /* cyan-50 */
+            border: 1px solid #a7f3d0; /* emerald-200 */
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            min-height: 80px; /* Ensure some height even when empty */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-style: italic;
+            color: #0f766e; /* teal-700 */
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4 sm:p-6 lg:p-8">
+
+    <div class="container-box w-full max-w-md mx-auto text-center">
+        <h1 class="text-4xl font-bold text-slate-800 mb-8">Pomodoro Timer</h1>
+
+        <div class="mb-8">
+            <div id="currentStatus" class="text-2xl font-semibold text-teal-700 mb-4">Ready</div>
+            <div id="timerLabel" class="text-7xl font-mono font-extrabold text-slate-900 mb-6">20:00</div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 mb-8">
+            <div>
+                <label for="workMinutes" class="block text-sm font-medium text-slate-600 mb-2">Work Minutes</label>
+                <input type="number" id="workMinutes" value="20" class="input-field">
+            </div>
+            <div>
+                <label for="breakMinutes" class="block text-sm font-medium text-slate-600 mb-2">Break Minutes</label>
+                <input type="number" id="breakMinutes" value="5" class="input-field">
+            </div>
+        </div>
+
+        <div class="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4 mb-8">
+            <button id="startButton" class="button-primary">Start</button>
+            <button id="resetButton" class="button-secondary">Reset</button>
+        </div>
+
+        <div class="mt-8 pt-8 border-t border-slate-200">
+            <h2 class="text-2xl font-bold text-slate-800 mb-6">AI-Powered Productivity ✨</h2>
+            <div class="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4 mb-6">
+                <button id="getFocusTipBtn" class="button-primary">✨ Get Focus Tip</button>
+                <button id="getBreakIdeaBtn" class="button-primary">✨ Get Break Idea</button>
+            </div>
+            <div id="llmResponseArea" class="llm-response-box text-slate-600">
+                Click a button above to get an AI-powered suggestion!
+            </div>
+            <div id="llmLoadingIndicator" class="mt-4 text-sm text-slate-500 hidden">Generating...</div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // MARK: - UI Elements
+            const timerLabel = document.getElementById('timerLabel');
+            const currentStatusLabel = document.getElementById('currentStatus');
+            const workMinutesInput = document.getElementById('workMinutes');
+            const breakMinutesInput = document.getElementById('breakMinutes');
+            const startButton = document.getElementById('startButton');
+            const resetButton = document.getElementById('resetButton');
+            const getFocusTipBtn = document.getElementById('getFocusTipBtn');
+            const getBreakIdeaBtn = document.getElementById('getBreakIdeaBtn');
+            const llmResponseArea = document.getElementById('llmResponseArea');
+            const llmLoadingIndicator = document.getElementById('llmLoadingIndicator');
+
+            // MARK: - Pomodoro State Management
+            const PomodoroState = {
+                READY: 'Ready',
+                WORKING: 'Work',
+                BREAKING: 'Break',
+                FINISHED: 'Finished!',
+                PAUSED: 'Paused' // Optional: for future enhancement
+            };
+
+            let currentPomodoroState = PomodoroState.READY;
+            let currentTimer = null; // Holds the single active timer instance (JS interval ID)
+            let remainingSeconds = 0; // Tracks seconds left in current phase
+            let currentRep = 0; // Tracks completed work/break cycles
+            const maxReps = 4; // For 8 phases (4 work, 4 break), so 4 full cycles
+
+            let workDuration = 0; // Will be set from text field (in seconds)
+            let breakDuration = 0; // Will be set from text field (in seconds)
+
+            // MARK: - Initialization
+            // Set initial state and update UI on load
+            currentPomodoroState = PomodoroState.READY;
+            updateUIForState();
+
+            // MARK: - Actions
+            startButton.addEventListener('click', () => {
+                // Invalidate any existing timer if the button is pressed again to start a new session
+                if (currentTimer) {
+                    clearInterval(currentTimer);
+                    currentTimer = null;
+                }
+
+                // Parse durations from text fields, providing defaults if input is invalid
+                workDuration = (parseInt(workMinutesInput.value) || 20) * 60;
+                breakDuration = (parseInt(breakMinutesInput.value) || 5) * 60;
+
+                currentRep = 0; // Reset reps for a new session
+                currentPomodoroState = PomodoroState.WORKING; // Start with the first work phase
+                startCurrentPhaseTimer(); // Initiate the timer for the current state
+            });
+            
+            resetButton.addEventListener('click', () => {
+                if (currentTimer) {
+                    clearInterval(currentTimer); // Stop any active timer
+                    currentTimer = null;
+                }
+                currentRep = 0;
+                remainingSeconds = 0;
+                currentPomodoroState = PomodoroState.READY; // Reset to initial state
+                updateUIForState(); // Reset UI elements
+                workMinutesInput.value = "20"; // Reset input fields to defaults
+                breakMinutesInput.value = "5";
+            });
+
+            // MARK: - Timer Logic
+            function startCurrentPhaseTimer() {
+                if (currentPomodoroState === PomodoroState.FINISHED) {
+                    // Handle finished state: update UI and stop further timer initiation
+                    currentStatusLabel.textContent = currentPomodoroState;
+                    timerLabel.textContent = "00:00";
+                    return;
+                }
+
+                // Invalidate any existing timer before starting a new one for the current phase
+                if (currentTimer) {
+                    clearInterval(currentTimer);
+                    currentTimer = null;
+                }
+
+                let duration;
+                switch (currentPomodoroState) {
+                    case PomodoroState.WORKING:
+                        duration = workDuration;
+                        currentStatusLabel.textContent = PomodoroState.WORKING;
+                        break;
+                    case PomodoroState.BREAKING:
+                        duration = breakDuration;
+                        currentStatusLabel.textContent = PomodoroState.BREAKING;
+                        break;
+                    case PomodoroState.READY:
+                    case PomodoroState.FINISHED:
+                    case PomodoroState.PAUSED:
+                        // These states should not trigger a new timer directly from here
+                        return;
+                }
+
+                remainingSeconds = duration;
+                updateTimerLabel(); // Update label immediately to show new duration
+
+                // Call the countdown function, providing a completion handler
+                // This completion handler will be executed ONLY when the current countdown finishes
+                count_down(duration, () => {
+                    // This block executes AFTER the current timer phase completes
+
+                    switch (currentPomodoroState) {
+                        case PomodoroState.WORKING:
+                            currentRep++; // Increment rep after a work phase
+                            if (currentRep < maxReps) {
+                                currentPomodoroState = PomodoroState.BREAKING; // Transition to break
+                            } else {
+                                currentPomodoroState = PomodoroState.FINISHED; // All reps completed
+                            }
+                            break;
+                        case PomodoroState.BREAKING:
+                            if (currentRep < maxReps) {
+                                currentPomodoroState = PomodoroState.WORKING; // Transition back to work
+                            } else {
+                                currentPomodoroState = PomodoroState.FINISHED; // All reps completed
+                            }
+                            break;
+                        case PomodoroState.READY:
+                        case PomodoroState.FINISHED:
+                        case PomodoroState.PAUSED:
+                            break; // No action needed or already handled
+                    }
+
+                    // Recursively call to start the next phase, or finalize if finished
+                    startCurrentPhaseTimer();
+                });
+            }
+            
+            // Modified count_down function to accept a duration and a completion handler
+            function count_down(duration, completion) {
+                if (currentTimer) {
+                    clearInterval(currentTimer); // Ensure any previous timer is stopped
+                    currentTimer = null; // Clear the reference
+                }
+
+                remainingSeconds = duration;
+
+                // Schedule a new repeating timer
+                currentTimer = setInterval(() => {
+                    if (remainingSeconds > 0) {
+                        remainingSeconds--;
+                        updateTimerLabel();
+                    } else {
+                        // Timer has finished counting down
+                        clearInterval(currentTimer); // Crucially, stop the repeating timer
+                        currentTimer = null; // Clear the timer reference
+                        completion(); // Signal completion to the caller
+                    }
+                }, 1000);
+            }
+            
+            // MARK: - UI Update Helpers
+            function updateUIForState() {
+                currentStatusLabel.textContent = currentPomodoroState;
+                updateTimerLabel(); // Ensure timer label is also updated based on remainingSeconds
+            }
+
+            function updateTimerLabel() {
+                const minutes = Math.floor(remainingSeconds / 60);
+                const seconds = remainingSeconds % 60;
+                // Format the time to always show two digits for seconds (e.g., 05 instead of 5)
+                timerLabel.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }
+
+            // MARK: - Gemini API Integration
+            const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=`; // API key is handled by the environment
+
+            async function callGeminiAPI(prompt) {
+                llmLoadingIndicator.classList.remove('hidden');
+                llmResponseArea.textContent = ''; // Clear previous response
+                getFocusTipBtn.disabled = true;
+                getBreakIdeaBtn.disabled = true;
+
+                let chatHistory = [];
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+                const payload = { contents: chatHistory };
+                const apiKey = ""; // Canvas will automatically provide this in runtime
+
+                try {
+                    const response = await fetch(GEMINI_API_URL + apiKey, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    const result = await response.json();
+
+                    if (result.candidates && result.candidates.length > 0 &&
+                        result.candidates[0].content && result.candidates[0].content.parts &&
+                        result.candidates[0].content.parts.length > 0) {
+                        return result.candidates[0].content.parts[0].text;
+                    } else {
+                        console.error('Gemini API response structure unexpected:', result);
+                        return 'Could not get a suggestion. Please try again.';
+                    }
+                } catch (error) {
+                    console.error('Error calling Gemini API:', error);
+                    return 'Error connecting to AI. Please check your network.';
+                } finally {
+                    llmLoadingIndicator.classList.add('hidden');
+                    getFocusTipBtn.disabled = false;
+                    getBreakIdeaBtn.disabled = false;
+                }
+            }
+
+            getFocusTipBtn.addEventListener('click', async () => {
+                llmResponseArea.textContent = ''; // Clear previous message
+                const prompt = "Give a short, actionable tip for staying focused during a work session (under 30 words).";
+                const tip = await callGeminiAPI(prompt);
+                llmResponseArea.textContent = tip;
+            });
+
+            getBreakIdeaBtn.addEventListener('click', async () => {
+                llmResponseArea.textContent = ''; // Clear previous message
+                const prompt = "Suggest a quick, refreshing activity for a 5-minute break (under 30 words).";
+                const idea = await callGeminiAPI(prompt);
+                llmResponseArea.textContent = idea;
+            });
+        });
+    </script>
+</body>
+</html>
