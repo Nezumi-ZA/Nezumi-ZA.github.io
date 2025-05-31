@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Guide to Swift Timers & Concurrency</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* slate-50 */
+            color: #334155; /* slate-700 */
+        }
+        .nav-link {
+            transition: color 0.2s, border-bottom-color 0.2s;
+            border-bottom: 2px solid transparent;
+        }
+        .nav-link.active, .nav-link:hover {
+            color: #0f766e; /* teal-700 */
+            border-bottom-color: #0f766e; /* teal-700 */
+        }
+        .code-block {
+            background-color: #1e293b; /* slate-800 */
+            color: #e2e8f0; /* slate-200 */
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+            font-size: 0.875rem;
+            line-height: 1.5;
+        }
+        .code-block .keyword { color: #93c5fd; } /* blue-300 */
+        .code-block .type { color: #86efac; } /* green-300 */
+        .code-block .comment { color: #9ca3af; } /* gray-400 */
+        .code-block .string { color: #fcd34d; } /* amber-300 */
+        .code-block .number { color: #f9a8d4; } /* pink-300 */
+        .simulation-box {
+            border: 1px solid #e2e8f0; /* slate-200 */
+            border-radius: 0.75rem;
+            background-color: white;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        .timeline {
+            position: relative;
+            padding-left: 2rem;
+            border-left: 2px solid #cbd5e1; /* slate-300 */
+        }
+        .timeline-item {
+            position: relative;
+            padding: 0.5rem 0 1.5rem 0;
+        }
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -2.5rem;
+            top: 0.8rem;
+            width: 1rem;
+            height: 1rem;
+            border-radius: 9999px;
+            background-color: white;
+            border: 2px solid #0d9488; /* teal-600 */
+        }
+        .timeline-item.executing::before {
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); background-color: #0d9488; }
+            50% { transform: scale(1.2); background-color: #2dd4bf; }
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <header class="bg-white/80 backdrop-blur-sm sticky top-0 z-50 shadow-sm">
+        <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <span class="font-bold text-xl text-teal-800">Swift Concurrency Explainer</span>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-4">
+                        <a href="#problem" class="nav-link px-3 py-2 rounded-md text-sm font-medium">The Problem</a>
+                        <a href="#concept" class="nav-link px-3 py-2 rounded-md text-sm font-medium">Core Concept</a>
+                        <a href="#solution" class="nav-link px-3 py-2 rounded-md text-sm font-medium">The Solution</a>
+                        <a href="#modern" class="nav-link px-3 py-2 rounded-md text-sm font-medium">Modern Swift</a>
+                        <a href="#takeaways" class="nav-link px-3 py-2 rounded-md text-sm font-medium">Takeaways</a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        
+        <section id="intro" class="text-center mb-20">
+            <h1 class="text-4xl font-bold tracking-tight text-slate-800 sm:text-5xl">Demystifying Asynchronous Timers in Swift</h1>
+            <p class="mt-6 text-lg leading-8 text-slate-600">An interactive guide to understanding why timer logic can be tricky and how to build robust, state-driven solutions.</p>
+        </section>
+
+        <section id="problem" class="mb-24 scroll-mt-20">
+            <h2 class="text-3xl font-bold text-slate-800 mb-4">1. The Problem: A Race of Timers</h2>
+            <p class="text-lg text-slate-600 mb-8">
+                This first section explores the issue presented in the original code. The logic attempts to use a standard `while` loop to sequence "Work" and "Break" timers. However, because `Timer.scheduledTimer` is asynchronous (it doesn't wait), the loop runs to completion instantly, launching all timers at once. This creates a "race condition" where multiple timers fight to update the UI simultaneously. Click the button below to see a simulation of this chaotic behavior.
+            </p>
+            <div class="grid md:grid-cols-2 gap-8 items-start">
+                <div>
+                    <h3 class="font-semibold text-xl mb-4 text-slate-700">The Problematic Code</h3>
+                    <pre class="code-block"><code class="language-swift"><span class="comment">// This loop runs instantly...</span>
+<span class="keyword">while</span> reps < <span class="number">8</span> {
+    <span class="keyword">if</span> currentStatus.text == <span class="string">"Ready"</span> || currentStatus.text == <span class="string">"Break"</span> {
+        currentStatus.text = <span class="string">"Work"</span>
+        <span class="comment">// ...scheduling a work timer...</span>
+        count_down(time: workSeconds) 
+    } <span class="keyword">else if</span> currentStatus.text == <span class="string">"Work"</span> {
+        currentStatus.text = <span class="string">"Break"</span>
+        <span class="comment">// ...and a break timer immediately after.</span>
+        count_down(time: breakSeconds)
+    }
+    reps += <span class="number">1</span>
+}</code></pre>
+                </div>
+                <div class="simulation-box p-6 text-center">
+                    <h3 class="font-semibold text-xl mb-4 text-slate-700">Live Simulation</h3>
+                    <p class="text-slate-500 mb-4">8 timers trying to update one label.</p>
+                    <div class="bg-slate-100 p-4 rounded-lg">
+                        <div id="buggy-timer-label" class="text-5xl font-mono font-bold text-red-600">00:00</div>
+                        <div id="buggy-status-label" class="mt-2 text-lg font-medium text-slate-800">Ready</div>
+                    </div>
+                    <button id="run-buggy-sim-btn" class="mt-6 bg-red-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-700 transition">
+                        Run Buggy Simulation
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <section id="concept" class="mb-24 scroll-mt-20">
+            <h2 class="text-3xl font-bold text-slate-800 mb-4">2. The Core Concept: Synchronous vs. Asynchronous</h2>
+            <p class="text-lg text-slate-600 mb-8">
+                To understand the bug, we must grasp the difference between synchronous and asynchronous execution. Synchronous code runs in sequence, one operation at a time, blocking the next one from starting. Asynchronous code schedules a task to run later and immediately moves on, allowing the program to remain responsive. This section provides interactive timelines to visualize this fundamental difference.
+            </p>
+            <div class="grid md:grid-cols-2 gap-12">
+                <div>
+                    <h3 class="font-semibold text-xl mb-4 text-center text-slate-700">Synchronous Execution</h3>
+                    <p class="text-center text-slate-500 mb-6">Each task waits for the previous one to finish. The UI is blocked.</p>
+                    <div class="simulation-box p-6">
+                        <div id="sync-timeline" class="timeline"></div>
+                    </div>
+                    <button id="play-sync-btn" class="mt-6 w-full bg-sky-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-sky-700 transition">Play Sync Animation</button>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-xl mb-4 text-center text-slate-700">Asynchronous Execution</h3>
+                    <p class="text-center text-slate-500 mb-6">Tasks are scheduled and run in the background. The UI remains responsive.</p>
+                    <div class="simulation-box p-6">
+                        <div id="async-timeline" class="timeline"></div>
+                    </div>
+                    <button id="play-async-btn" class="mt-6 w-full bg-teal-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-teal-700 transition">Play Async Animation</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="solution" class="mb-24 scroll-mt-20">
+            <h2 class="text-3xl font-bold text-slate-800 mb-4">3. The Solution: A State-Driven Approach</h2>
+             <p class="text-lg text-slate-600 mb-8">
+                The correct approach is to manage the application's flow using an explicit state machine, not a `while` loop. We define distinct states (`.working`, `.breaking`, etc.) and transition between them only when an asynchronous task (the timer) *completes*. This is achieved with a "completion handler"—a piece of code that runs only after the timer finishes. Explore the interactive diagram of the state machine and try the functional Pomodoro demo below.
+            </p>
+            <div class="grid lg:grid-cols-2 gap-8 items-start">
+                 <div>
+                    <h3 class="font-semibold text-xl mb-4 text-slate-700">Pomodoro State Machine</h3>
+                    <p class="text-slate-500 mb-4">Click a state to see its role.</p>
+                    <div class="simulation-box p-6 space-y-3">
+                         <div class="state-item p-3 rounded-lg cursor-pointer transition hover:bg-slate-100" data-desc="The initial state. The timer is waiting to be started.">
+                             <h4 class="font-bold text-teal-700">1. Ready</h4>
+                             <p class="text-sm text-slate-600">Event: Start Button → Transitions to <span class="font-semibold">Working</span></p>
+                         </div>
+                         <div class="state-item p-3 rounded-lg cursor-pointer transition hover:bg-slate-100" data-desc="The main focus period. The work timer is active.">
+                             <h4 class="font-bold text-teal-700">2. Working</h4>
+                             <p class="text-sm text-slate-600">Event: Timer Completes → Transitions to <span class="font-semibold">Breaking</span></p>
+                         </div>
+                         <div class="state-item p-3 rounded-lg cursor-pointer transition hover:bg-slate-100" data-desc="The rest period. The break timer is active.">
+                             <h4 class="font-bold text-teal-700">3. Breaking</h4>
+                             <p class="text-sm text-slate-600">Event: Timer Completes → Transitions to <span class="font-semibold">Working</span> or <span class="font-semibold">Finished</span></p>
+                         </div>
+                         <div class="state-item p-3 rounded-lg cursor-pointer transition hover:bg-slate-100" data-desc="The final state after all work/break cycles are complete.">
+                             <h4 class="font-bold text-teal-700">4. Finished</h4>
+                             <p class="text-sm text-slate-600">Event: Reset Button → Transitions to <span class="font-semibold">Ready</span></p>
+                         </div>
+                    </div>
+                    <div id="state-desc" class="mt-4 p-4 bg-teal-50 text-teal-800 rounded-lg h-24 transition">Select a state to see its description.</div>
+                 </div>
+                 <div class="simulation-box p-6 text-center">
+                    <h3 class="font-semibold text-xl mb-4 text-slate-700">Functional Pomodoro Demo</h3>
+                    <p class="text-slate-500 mb-4">A working timer built with the correct state logic.</p>
+                     <div class="bg-slate-100 p-4 rounded-lg">
+                        <div id="good-timer-label" class="text-5xl font-mono font-bold text-teal-700">00:10</div>
+                        <div id="good-status-label" class="mt-2 text-lg font-medium text-slate-800">Ready</div>
+                    </div>
+                    <div class="flex justify-center space-x-4">
+                        <button id="start-good-sim-btn" class="mt-6 bg-teal-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-teal-700 transition">
+                            Start (Work: 10s)
+                        </button>
+                         <button id="reset-good-sim-btn" class="mt-6 bg-slate-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-slate-600 transition">
+                            Reset
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="modern" class="mb-24 scroll-mt-20">
+            <h2 class="text-3xl font-bold text-slate-800 mb-4">4. A Glimpse at Modern Swift: `async/await`</h2>
+            <p class="text-lg text-slate-600 mb-8">
+                While completion handlers are a robust solution, modern Swift provides an even cleaner syntax called `async/await`. It allows you to write asynchronous code that looks and reads like synchronous code, making complex flows much easier to manage. This eliminates the "pyramid of doom" that can occur with nested callbacks. Below is a conceptual comparison.
+            </p>
+            <div class="grid md:grid-cols-2 gap-8 items-start">
+                <div>
+                    <h3 class="font-semibold text-xl mb-4 text-slate-700">Before: Callback-Based</h3>
+                    <pre class="code-block"><code class="language-swift"><span class="keyword">func</span> <span class="function-name">doWork</span>(completion: <span class="keyword">@escaping</span> () -> <span class="type">Void</span>) {
+    <span class="comment">// ... do async work ...</span>
+    completion()
+}
+
+<span class="function-name">doWork</span> {
+    <span class="comment">// Code to run after completion is nested</span>
+}</code></pre>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-xl mb-4 text-slate-700">After: `async/await`</h3>
+                     <pre class="code-block"><code class="language-swift"><span class="keyword">async func</span> <span class="function-name">doWork</span>() {
+    <span class="comment">// ... do async work ...</span>
+}
+
+<span class="comment">// Code reads sequentially, like sync code</span>
+<span class="keyword">await</span> <span class="function-name">doWork</span>()
+<span class="comment">// Code here runs after completion</span></code></pre>
+                </div>
+            </div>
+        </section>
+        
+        <section id="takeaways" class="scroll-mt-20">
+            <h2 class="text-3xl font-bold text-slate-800 mb-8 text-center">Key Takeaways</h2>
+            <div class="grid sm:grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="simulation-box p-6">
+                    <div class="flex items-center justify-center h-12 w-12 rounded-lg bg-teal-100 text-teal-700 mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+                    </div>
+                    <h3 class="font-semibold text-lg mb-2">Sync vs. Async is Critical</h3>
+                    <p class="text-slate-600">Loops are synchronous; timers are asynchronous. Never use a synchronous loop to sequence asynchronous tasks. This is the root of the problem.</p>
+                </div>
+                <div class="simulation-box p-6">
+                     <div class="flex items-center justify-center h-12 w-12 rounded-lg bg-teal-100 text-teal-700 mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5V4H4zm0 12v5h5v-5H4zM15 4v5h5V4h-5zm0 12v5h5v-5h-5z" /></svg>
+                    </div>
+                    <h3 class="font-semibold text-lg mb-2">Use Explicit State</h3>
+                    <p class="text-slate-600">Manage your application's flow with a state machine (e.g., an `enum`). The UI should always be a reflection of the state, not the source of it.</p>
+                </div>
+                <div class="simulation-box p-6">
+                    <div class="flex items-center justify-center h-12 w-12 rounded-lg bg-teal-100 text-teal-700 mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
+                    </div>
+                    <h3 class="font-semibold text-lg mb-2">Signal Completion</h3>
+                    <p class="text-slate-600">Use completion handlers or modern `async/await` to signal when an asynchronous task has finished, allowing you to safely trigger the next step in the sequence.</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const navLinks = document.querySelectorAll('.nav-link');
+            const sections = document.querySelectorAll('main section[id]');
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        navLinks.forEach(link => {
+                            link.classList.toggle('active', link.getAttribute('href').substring(1) === entry.target.id);
+                        });
+                    }
+                });
+            }, { rootMargin: '-50% 0px -50% 0px' });
+
+            sections.forEach(section => observer.observe(section));
+
+            // Buggy Simulation
+            const runBuggySimBtn = document.getElementById('run-buggy-sim-btn');
+            const buggyTimerLabel = document.getElementById('buggy-timer-label');
+            const buggyStatusLabel = document.getElementById('buggy-status-label');
+            let buggyInterval;
+            runBuggySimBtn.addEventListener('click', () => {
+                runBuggySimBtn.disabled = true;
+                runBuggySimBtn.textContent = 'Running...';
+                clearInterval(buggyInterval);
+                let statusText = "Ready";
+                buggyStatusLabel.textContent = statusText;
+                const timers = [];
+
+                for (let i = 0; i < 8; i++) {
+                    if (statusText === 'Ready' || statusText === 'Break') {
+                        statusText = 'Work';
+                    } else {
+                        statusText = 'Break';
+                    }
+                    buggyStatusLabel.textContent = statusText;
+                    timers.push(Math.floor(Math.random() * 20) + 5);
+                }
+
+                buggyInterval = setInterval(() => {
+                    const randomTimerIndex = Math.floor(Math.random() * timers.length);
+                    const newTime = Math.floor(Math.random() * 60);
+                    buggyTimerLabel.textContent = `00:${newTime < 10 ? '0' : ''}${newTime}`;
+                }, 100);
+
+                setTimeout(() => {
+                    clearInterval(buggyInterval);
+                    buggyTimerLabel.textContent = '??:??';
+                    buggyStatusLabel.textContent = 'Chaos!';
+                    runBuggySimBtn.disabled = false;
+                    runBuggySimBtn.textContent = 'Run Buggy Simulation';
+                }, 3000);
+            });
+
+            // Timelines
+            const playSyncBtn = document.getElementById('play-sync-btn');
+            const syncTimeline = document.getElementById('sync-timeline');
+            const playAsyncBtn = document.getElementById('play-async-btn');
+            const asyncTimeline = document.getElementById('async-timeline');
+
+            const syncTasks = ['Task 1 (2s)', 'Task 2 (1.5s)', 'Task 3 (1s)'];
+            const syncDurations = [2000, 1500, 1000];
+            const asyncTasks = ['Main Thread', 'Schedule Task 1', 'Main Thread Continues', 'Task 1 Finishes'];
+
+            const createTaskElement = (text, isExecuting = false) => `
+                <div class="timeline-item ${isExecuting ? 'executing' : ''}">
+                    <h4 class="font-semibold text-slate-700">${text}</h4>
+                </div>`;
+            
+            playSyncBtn.addEventListener('click', () => {
+                playSyncBtn.disabled = true;
+                syncTimeline.innerHTML = '';
+                let cumulativeDelay = 0;
+                syncTasks.forEach((task, index) => {
+                    setTimeout(() => {
+                        syncTimeline.innerHTML += createTaskElement(task, true);
+                    }, cumulativeDelay);
+                    cumulativeDelay += syncDurations[index];
+                });
+                 setTimeout(() => playSyncBtn.disabled = false, cumulativeDelay);
+            });
+            
+            playAsyncBtn.addEventListener('click', () => {
+                 playAsyncBtn.disabled = true;
+                 asyncTimeline.innerHTML = '';
+                 setTimeout(() => asyncTimeline.innerHTML += createTaskElement(asyncTasks[0], true), 0);
+                 setTimeout(() => asyncTimeline.innerHTML += createTaskElement(asyncTasks[1]), 500);
+                 setTimeout(() => asyncTimeline.innerHTML += createTaskElement(asyncTasks[2], true), 600);
+                 setTimeout(() => asyncTimeline.innerHTML += createTaskElement(asyncTasks[3]), 2000);
+                 setTimeout(() => playAsyncBtn.disabled = false, 2500);
+            });
+
+            // State Machine
+            const stateItems = document.querySelectorAll('.state-item');
+            const stateDesc = document.getElementById('state-desc');
+            stateItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    stateItems.forEach(i => i.classList.remove('bg-teal-50'));
+                    item.classList.add('bg-teal-50');
+                    stateDesc.textContent = item.dataset.desc;
+                });
+            });
+
+            // Good Pomodoro
+            const startGoodBtn = document.getElementById('start-good-sim-btn');
+            const resetGoodBtn = document.getElementById('reset-good-sim-btn');
+            const goodTimerLabel = document.getElementById('good-timer-label');
+            const goodStatusLabel = document.getElementById('good-status-label');
+            
+            let goodTimerInterval;
+            let goodTimerState = 'ready';
+            let remainingSeconds = 10;
+            const workDuration = 10;
+            const breakDuration = 5;
+
+            const updateGoodTimerLabel = () => {
+                 goodTimerLabel.textContent = `00:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
+            }
+
+            const stopTimer = () => {
+                clearInterval(goodTimerInterval);
+                goodTimerInterval = null;
+                 startGoodBtn.disabled = false;
+                 resetGoodBtn.disabled = false;
+            }
+            
+            const startPhase = () => {
+                if (goodTimerState === 'finished') {
+                    goodStatusLabel.textContent = 'Finished!';
+                    stopTimer();
+                    return;
+                }
+                
+                if (goodTimerState === 'working') {
+                    goodStatusLabel.textContent = 'Work';
+                    remainingSeconds = workDuration;
+                } else if (goodTimerState === 'breaking') {
+                    goodStatusLabel.textContent = 'Break';
+                    remainingSeconds = breakDuration;
+                }
+                updateGoodTimerLabel();
+
+                goodTimerInterval = setInterval(() => {
+                    remainingSeconds--;
+                    updateGoodTimerLabel();
+                    if (remainingSeconds <= 0) {
+                        clearInterval(goodTimerInterval);
+                        if(goodTimerState === 'working') {
+                            goodTimerState = 'breaking';
+                        } else {
+                            goodTimerState = 'working';
+                        }
+                        startPhase();
+                    }
+                }, 1000);
+            }
+
+            startGoodBtn.addEventListener('click', () => {
+                if (goodTimerState === 'ready' || goodTimerState === 'paused') {
+                    goodTimerState = 'working';
+                    startGoodBtn.disabled = true;
+                    resetGoodBtn.disabled = true;
+                    startPhase();
+                }
+            });
+
+            resetGoodBtn.addEventListener('click', () => {
+                stopTimer();
+                goodTimerState = 'ready';
+                goodStatusLabel.textContent = 'Ready';
+                remainingSeconds = workDuration;
+                updateGoodTimerLabel();
+            });
+        });
+    </script>
+</body>
+</html>
