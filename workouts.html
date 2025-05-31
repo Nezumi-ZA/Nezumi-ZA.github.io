@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Workout Planner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .tab-active { border-color: #0d9488; color: #0d9488; background-color: #f0fdfa; }
+        .tab-inactive { border-color: transparent; color: #52525b; }
+        .chart-container { position: relative; width: 100%; max-width: 400px; margin-left: auto; margin-right: auto; height: 300px; max-height: 400px; }
+        @media (min-width: 768px) { .chart-container { height: 350px; } }
+        
+        /* New modal styles */
+        .modal-overlay {
+            background-color: rgba(0, 0, 0, 0.5);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+            display: flex; /* Keep flex so children are laid out, but hidden by visibility/opacity */
+        }
+        .modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        /* Initial state for modal content (scaled down) */
+        .modal-content {
+            transform: scale(0.95);
+            transition: transform 0.3s ease;
+        }
+        /* Final state for modal content (scaled up) when overlay is shown */
+        .modal-overlay.show .modal-content {
+            transform: scale(1);
+        }
+
+        .muscle-btn.active {
+            background-color: #0d9488;
+            color: white;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+    <div id="app" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-slate-900">Your Interactive Workout Plan</h1>
+            <p class="mt-2 text-lg text-slate-600">An optimized plan for strength, mobility, and recovery.</p>
+        </header>
+
+        <nav class="mb-8 border-b border-slate-200">
+            <ul class="flex flex-wrap -mb-px justify-center text-sm font-medium text-center">
+                <li class="mr-2">
+                    <button class="nav-tab inline-block p-4 border-b-2 rounded-t-lg" data-view="dashboard">📊 Dashboard</button>
+                </li>
+                <li class="mr-2">
+                    <button class="nav-tab inline-block p-4 border-b-2 rounded-t-lg" data-view="weekly">🗓️ Weekly Plan</button>
+                </li>
+                <li class="mr-2">
+                    <button class="nav-tab inline-block p-4 border-b-2 rounded-t-lg" data-view="library">🏋️ Exercise Library</button>
+                </li>
+                 <li class="mr-2">
+                    <button class="nav-tab inline-block p-4 border-b-2 rounded-t-lg" data-view="mobility">🧘 Mobility Hub</button>
+                </li>
+            </ul>
+        </nav>
+
+        <main id="main-content">
+        </main>
+
+    </div>
+
+    <div id="exercise-modal" class="fixed inset-0 z-50 items-center justify-center p-4 modal-overlay">
+        <div class="relative w-full max-w-2xl max-h-full mx-auto">
+            <div class="relative bg-white rounded-lg shadow modal-content transform scale-95">
+                <div class="flex items-start justify-between p-4 border-b rounded-t">
+                    <h3 id="modal-title" class="text-xl font-semibold text-gray-900"></h3>
+                    <button type="button" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ml-auto inline-flex justify-center items-center" onclick="app.closeModal()">
+                        <span class="text-2xl leading-none">&times;</span>
+                        <span class="sr-only">Close modal</span>
+                    </button>
+                </div>
+                <div id="modal-body" class="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        const app = {
+            currentView: 'dashboard',
+            activeExercise: null,
+            currentSet: 1,
+
+            data: {
+                exercises: [
+                    { id: 1, day: 'Tuesday', name: 'Dumbbell Shoulder Press', sets: 3, reps: 10, muscles: ['Shoulders', 'Triceps'], image: 'https://placehold.co/600x400/e2e8f0/475569?text=Shoulder+Press', desc: 'Sit or stand holding dumbbells at shoulder height, palms facing forward. Press the weights overhead until arms are fully extended. Lower back down with control.', tips: 'Keep your core engaged and avoid arching your back. Press straight up, not forward.', mistakes: 'Flaring elbows too wide; using momentum.' },
+                    { id: 2, day: 'Tuesday', name: 'Bent-over Dumbbell Rows', sets: 3, reps: 12, muscles: ['Back', 'Biceps'], image: 'https://placehold.co/600x400/e2e8f0/475569?text=DB+Rows', desc: 'Hinge at your hips with a flat back, holding dumbbells with palms facing your body. Row the weights up towards your hips, squeezing your shoulder blades. Lower with control.', tips: 'Initiate by pulling with your back muscles, not your arms. Keep elbows close to your body.', mistakes: 'Rounding the back; jerking the weight.' },
+                    { id: 3, day: 'Tuesday', name: 'Push-ups', sets: 3, reps: 15, muscles: ['Chest', 'Shoulders', 'Triceps'], image: 'https://placehold.co/600x400/e2e8f0/475569?text=Push-ups', desc: 'Start in a high plank position. Lower your body until your chest nearly touches the floor. Push back up to the starting position, keeping your body in a straight line.', tips: 'Keep your core tight and elbows tucked in slightly, not flared out.', mistakes: 'Sagging hips; not going low enough.' },
+                    { id: 4, day: 'Tuesday', name: 'Dumbbell Bicep Curls', sets: 3, reps: 12, muscles: ['Biceps'], image: 'https://placehold.co/600x400/e2e8f0/475569?text=Bicep+Curls', desc: 'Stand tall, holding dumbbells with an underhand grip. Curl the weights up towards your shoulders, keeping your upper arms stationary. Lower with control.', tips: 'Avoid swinging your body. Control the downward (eccentric) phase.', mistakes: 'Using momentum; not achieving full range of motion.' },
+                    { id: 5, day: 'Tuesday', name: 'Triceps Dips', sets: 3, reps: 10, muscles: ['Triceps', 'Chest'], image: 'https://placehold.co/600x400/e2e8f0/475569?text=Triceps+Dips', desc: 'Use a chair or bench. Place hands on the edge, legs extended. Lower your body by bending your elbows until they are at a 90-degree angle. Push back up.', tips: 'Keep your back close to the bench and elbows pointing straight back.', mistakes: 'Flaring elbows; going too low and stressing shoulders.' },
+                    { id: 6, day: 'Tuesday', name: 'Russian Twists', sets: 3, reps: '20 (10 each side)', muscles: ['Core'], image: 'https://placehold.co/600x400/e2e8f0/475569?text=Russian+Twists', desc: 'Sit on the floor, lean back slightly with a straight back, and lift your feet. Hold a dumbbell and twist your torso from side to side.', tips: 'Rotate your torso, not just your arms. Keep the movement controlled.', mistakes: 'Rounding the back; moving too fast.' },
+                    { id: 7, day: 'Tuesday', name: 'Plank Hold', sets: 3, reps: '45 sec', muscles: ['Core'], image: 'https://placehold.co/600x400/e2e8f0/475569?text=Plank', desc: 'Hold a position on your forearms and toes, keeping your body in a straight line from head to heels. Engage your core and glutes.', tips: 'Don\'t let your hips sag or rise too high. Look at the floor to keep your neck neutral.', mistakes: 'Arching or rounding the back.' },
+                    { id: 8, day: 'Wednesday', name: 'Stair Climber', sets: 1, reps: '20-30 min', muscles: ['Legs', 'Cardio'], image: 'https://placehold.co/600x400/e2e8f0/475569?text=Stair+Climber', desc: 'Perform steady-state cardio on the stair climber machine.', tips: 'Maintain an upright posture; avoid leaning heavily on the handrails.', mistakes: 'Leaning on rails, which reduces intensity.' },
+                    { id: 9, day: 'Wednesday', name: 'Dumbbell Romanian Deadlifts', sets: 3, reps: 12, muscles: ['Hamstrings', 'Glutes'], image: 'https://placehold.co/600x400/e2e8f0/475569?text=RDLs', desc: 'Stand with dumbbells in front of your thighs. Hinge at your hips, keeping your back straight and legs almost straight (slight knee bend). Lower the weights until you feel a stretch in your hamstrings. Return to standing by squeezing your glutes.', tips: 'Keep the dumbbells close to your legs. The movement is a hip hinge, not a squat.', mistakes: 'Rounding the back; bending knees too much.' },
+                    { id: 10, day: 'Wednesday', name: 'Dumbbell Calf Raises', sets: 3, reps: 15, muscles: ['Calves'], image: 'https://placehold.co/600x400/e2e8f0/475569?text=Calf+Raises', desc: 'Stand holding dumbbells. Push through the balls of your feet to raise your heels as high as possible. Pause, then lower with control.', tips: 'For a greater range of motion, stand on the edge of a step.', mistakes: 'Bouncing; not pausing at the top.' },
+                    { id: 11, day: 'Wednesday', name: 'Glute Bridges', sets: 3, reps: 15, muscles: ['Glutes', 'Hamstrings'], image: 'https://placehold.co/600x400/e2e8f0/475569?text=Glute+Bridges', desc: 'Lie on your back with knees bent, feet flat on the floor. Drive through your heels to lift your hips until your body forms a straight line from shoulders to knees. Squeeze your glutes at the top.', tips: 'Avoid over-arching your lower back. Focus on the glute squeeze.', mistakes: 'Using the lower back to lift.' },
+                    { id: 12, day: 'Friday', name: 'Barbell Squats', sets: 3, reps: 10, muscles: ['Legs', 'Glutes'], image: 'https://placehold.co/600x400/e2e8f0/475569?text=Barbell+Squats', desc: 'With a barbell across your upper back, stand with feet shoulder-width apart. Lower your hips back and down as if sitting in a chair, keeping your chest up. Go to at least parallel, then drive back up.', tips: 'Keep your core braced and back straight. Knees should track over your feet.', mistakes: 'Leaning too far forward; knees caving in.' },
+                    { id: 13, day: 'Friday', name: 'Dumbbell Bulgarian Split Squats', sets: 3, reps: '10 per leg', muscles: ['Legs', 'Glutes'], image: 'https://placehold.co/600x400/e2e8f0/475569?text=Bulgarian+Split+Squats', desc: 'Stand a few feet in front of a bench. Place the top of one foot on the bench behind you. Lower your body until your front thigh is parallel to the floor.', tips: 'Keep your torso upright. The front knee should not travel past your toes.', mistakes: 'Pushing off the back foot; poor balance.' },
+                    { id: 14, day: 'Friday', name: 'Dumbbell Deadlifts', sets: 3, reps: 12, muscles: ['Back', 'Hamstrings', 'Glutes'], image: 'https://placehold.co/600x400/e2e8f0/475569?text=DB+Deadlifts', desc: 'Holding dumbbells, hinge at your hips and lower the weights towards the floor with a flat back. Keep a slight bend in your knees. Drive through your legs to stand back up.', tips: 'This is a different movement from the Romanian Deadlift, involving more knee bend, but the flat back is still key.', mistakes: 'Rounding the back; lifting with your arms.' },
+                    { id: 15, day: 'Friday', name: 'Dumbbell Side Lunges', sets: 3, reps: '12 per side', muscles: ['Legs', 'Glutes'], image: 'https://placehold.co/600x400/e2e8f0/475569?text=Side+Lunges', desc: 'Step out to one side, sending your hips back and bending your knee. Keep the other leg straight. Push off the bent leg to return to the start.', tips: 'Keep your chest up and the stationary foot planted firmly.', mistakes: 'Leaning the torso forward; lifting the heel of the stationary foot.' },
+                    { id: 16, day: 'Friday', name: 'Lying Leg Raises', sets: 3, reps: 12, muscles: ['Core'], image: 'https://placehold.co/600x400/e2e8f0/475569?text=Leg+Raises', desc: 'Lie on your back, legs straight. Keeping your lower back pressed into the floor, raise your legs until they are perpendicular to the floor. Lower with control.', tips: 'Place your hands under your lower back for support if needed.', mistakes: 'Arching the lower back; using momentum.' },
+                    { id: 17, day: 'Friday', name: 'Plank with Dumbbell Drag', sets: 3, reps: '45 sec', muscles: ['Core', 'Shoulders'], image: 'https://placehold.co/600x400/e2e8f0/475569?text=Plank+Drag', desc: 'In a high plank position, place a dumbbell to one side of your body. Reach under with the opposite hand, drag the dumbbell to the other side. Repeat, alternating sides.', tips: 'Try to keep your hips as still as possible. Resist the urge to rotate.', mistakes: 'Twisting hips; sagging back.' },
+                    { id: 18, day: 'Saturday', name: 'Dumbbell Clean & Press', sets: 3, reps: 10, muscles: ['Full Body', 'Shoulders'], image: 'https://placehold.co/600x400/e2e8f0/475569?text=Clean+&+Press', desc: 'From a semi-squat position with dumbbells, explosively stand up, "cleaning" the dumbbells to your shoulders. From there, press them overhead.', tips: 'Use the power from your legs and hips to drive the weight up. It\'s one fluid motion.', mistakes: 'Using only arms; arching back on the press.' },
+                    { id: 19, day: 'Saturday', name: 'Barbell Deadlifts', sets: 3, reps: 12, muscles: ['Back', 'Hamstrings', 'Glutes'], image: 'https://placehold.co/600x400/e2e8f0/475569?text=Barbell+Deadlifts', desc: 'Stand with feet hip-width apart, shins close to the bar. Hinge at the hips with a flat back to grip the bar. Drive through your feet to lift, keeping the bar close to your body. Squeeze glutes at the top.', tips: 'Keep back straight and chest up. The lift is driven by your legs.', mistakes: 'Rounding the back; jerking the bar off the floor.' },
+                    { id: 20, day: 'Saturday', name: 'Dumbbell Step-ups', sets: 3, reps: '10 per leg', muscles: ['Legs', 'Glutes'], image: 'https://placehold.co/600x400/e2e8f0/475569?text=Step-ups', desc: 'Holding dumbbells, step onto a bench or box with one foot. Drive through that heel to stand up on the bench. Step back down with control.', tips: 'Focus on using the top leg to do the work. Don\'t push off from the bottom foot.', mistakes: 'Using momentum; not controlling the descent.' },
+                    { id: 21, day: 'Saturday', name: 'Dumbbell Thrusters', sets: 3, reps: 10, muscles: ['Full Body', 'Shoulders', 'Legs'], image: 'https://placehold.co/600x400/e2e8f0/475569?text=Thrusters', desc: 'Hold dumbbells at your shoulders. Perform a full squat. As you stand up, use the momentum to press the dumbbells directly overhead in one fluid motion.', tips: 'The power for the press comes from the squat. Keep your core tight.', mistakes: 'Pausing between the squat and press; shallow squat.' },
+                    { id: 22, day: 'Saturday', name: 'Bicycle Crunches', sets: 3, reps: 20, muscles: ['Core'], image: 'https://placehold.co/600x400/e2e8f0/475569?text=Bicycle+Crunches', desc: 'Lie on your back, hands behind your head. Bring one knee towards the opposite elbow, alternating sides in a "pedaling" motion.', tips: 'Keep your shoulder blades off the floor. Don\'t pull on your neck.', mistakes: 'Moving too fast; not fully extending the leg.' },
+                    { id: 23, day: 'Saturday', name: 'Side Plank', sets: 3, reps: '30 sec each side', muscles: ['Core'], image: 'https://placehold.co/600x400/e2e8f0/475569?text=Side+Plank', desc: 'Lie on your side, propped up on one forearm. Lift your hips so your body forms a straight line. Hold.', tips: 'Don\'t let your hips sag. Keep your body aligned.', mistakes: 'Hips dropping; rolling forward or backward.' },
+                ],
+                mobility: [
+                    { id: 101, name: 'Arm Circles', type: 'Warm-up', desc: 'Stand and make large, controlled circles with your arms, both forwards and backwards. This warms up the shoulder joint.' },
+                    { id: 102, name: 'Torso Twists', type: 'Warm-up', desc: 'Stand with feet shoulder-width apart and gently twist your torso from side to side to mobilize your spine and core.' },
+                    { id: 103, name: 'Cat-Cow Stretch', type: ['Warm-up', 'Cool-down', 'Recovery'], desc: 'On all fours, alternate between arching your back up (cat) and dropping your belly down (cow) to improve spinal mobility.' },
+                    { id: 104, name: 'Leg Swings', type: 'Warm-up', desc: 'Holding onto something for balance, swing one leg forward and backward, and then side to side, to open up the hips.' },
+                    { id: 105, name: 'Ankle Circles', type: 'Warm-up', desc: 'Sit or stand and rotate your ankle in circles in both directions to prepare for lower body movements.' },
+                    { id: 106, name: 'Hip Circles', type: 'Warm-up', desc: 'Stand with hands on hips and make large circles with your hips to lubricate the joint.' },
+                    { id: 107, name: 'Bird-Dog', type: 'Recovery', desc: 'On all fours, extend one arm forward and the opposite leg back, keeping your core tight and back flat. Promotes core stability.' },
+                    { id: 108, name: 'Dead Bug', type: 'Recovery', desc: 'Lie on your back with arms and knees in the air (tabletop). Slowly lower one arm and the opposite leg towards the floor. Excellent for deep core stability.' },
+                    { id: 109, name: 'Cross-Body Shoulder Stretch', type: 'Cool-down', desc: 'Gently pull one arm across your chest until you feel a stretch in your shoulder. Hold for 20-30 seconds.' },
+                    { id: 110, name: 'Standing Chest Opener', type: 'Cool-down', desc: 'Clasp your hands behind your back and gently lift your arms to open up and stretch your chest and the front of your shoulders.' },
+                    { id: 111, name: 'Child\'s Pose', type: ['Cool-down', 'Recovery'], desc: 'From a kneeling position, sit back on your heels and fold forward, resting your forehead on the floor. Stretches the back and shoulders.' },
+                    { id: 112, name: 'Hamstring Stretch', type: 'Cool-down', desc: 'Sit on the floor with one leg extended, and gently lean forward to feel a stretch in the back of your thigh.' },
+                    { id: 113, name: 'Quad Stretch', type: 'Cool-down', desc: 'Stand and hold onto something for balance. Grab one ankle and gently pull your heel towards your glute to stretch the front of your thigh.' },
+                    { id: 114, name: 'Glute Stretch (Figure-4)', type: 'Cool-down', desc: 'Lie on your back with knees bent. Cross one ankle over the opposite knee and gently pull the bottom leg towards you.' },
+                    { id: 115, name: 'Downward-Facing Dog', type: ['Cool-down', 'Recovery'], desc: 'From a plank position, push your hips up and back to form an inverted V shape. Stretches the entire back of the body.' },
+                ],
+                schedule: [
+                    { day: 'Tuesday', focus: 'Upper Body + Core' },
+                    { day: 'Wednesday', focus: 'Stair Climber Leg Day' },
+                    { day: 'Thursday', focus: 'Rest' },
+                    { day: 'Friday', focus: 'Lower Body + Core' },
+                    { day: 'Saturday', focus: 'Full-Body Strength + Endurance' },
+                    { day: 'Sunday', focus: 'Active Recovery / Mobility' },
+                    { day: 'Monday', focus: 'Rest' }
+                ],
+                muscleGroups: ['Shoulders', 'Back', 'Chest', 'Biceps', 'Triceps', 'Legs', 'Glutes', 'Hamstrings', 'Calves', 'Core', 'Full Body', 'Cardio']
+            },
+
+            init() {
+                this.renderView();
+                this.setupEventListeners();
+            },
+            
+            setupEventListeners() {
+                const navTabs = document.querySelectorAll('.nav-tab');
+                navTabs.forEach(tab => {
+                    tab.addEventListener('click', (e) => {
+                        this.currentView = e.target.dataset.view;
+                        this.renderView();
+                    });
+                });
+            },
+
+            renderView() {
+                const mainContent = document.getElementById('main-content');
+                document.querySelectorAll('.nav-tab').forEach(tab => {
+                    if(tab.dataset.view === this.currentView) {
+                        tab.classList.remove('tab-inactive');
+                        tab.classList.add('tab-active');
+                    } else {
+                        tab.classList.remove('tab-active');
+                        tab.classList.add('tab-inactive');
+                    }
+                });
+
+                switch (this.currentView) {
+                    case 'dashboard':
+                        mainContent.innerHTML = this.renderDashboard();
+                        this.renderChart();
+                        break;
+                    case 'weekly':
+                        mainContent.innerHTML = this.renderWeeklyPlan();
+                        break;
+                    case 'library':
+                        mainContent.innerHTML = this.renderLibrary();
+                        this.setupLibraryListeners();
+                        break;
+                    case 'mobility':
+                        mainContent.innerHTML = this.renderMobilityHub();
+                        break;
+                }
+            },
+
+            renderDashboard() {
+                const totalWorkouts = this.data.schedule.filter(d => d.focus !== 'Rest' && d.focus !== 'Active Recovery / Mobility').length;
+                const nextWorkout = this.data.schedule.find(d => new Date().toLocaleString('en-us', {  weekday: 'long' }) === d.day) || this.data.schedule[0];
+
+                return `
+                    <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+                         <h2 class="text-2xl font-bold mb-4 text-slate-800">Welcome to Your Fitness Dashboard</h2>
+                         <p class="text-slate-600">This is your mission control for the week. Here you can see a summary of your schedule, get a quick look at your next workout, and visualize how your efforts are distributed across different training goals. Use the tabs above to dive deeper into your daily plan, explore specific exercises, or focus on mobility.</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <h3 class="text-xl font-semibold mb-4">Today's Focus: ${nextWorkout.day}</h3>
+                            <div class="bg-teal-50 border-l-4 border-teal-500 text-teal-800 p-4 rounded-r-lg">
+                                <p class="font-bold text-lg">${nextWorkout.focus}</p>
+                                ${nextWorkout.focus !== 'Rest' ? '<p class="mt-1">Navigate to the "Weekly Plan" tab for full details.</p>' : '<p class="mt-1">Enjoy your rest day! Recovery is key.</p>'}
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <h3 class="text-xl font-semibold mb-4 text-center">Weekly Focus Distribution</h3>
+                            <div class="chart-container">
+                                <canvas id="focusChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            },
+            
+            renderChart() {
+                const ctx = document.getElementById('focusChart').getContext('2d');
+                const focusCounts = {
+                    'Upper Body': 0,
+                    'Lower Body': 0,
+                    'Full Body': 0,
+                    'Cardio': 0,
+                };
+
+                this.data.exercises.forEach(ex => {
+                    if (ex.day === 'Tuesday') focusCounts['Upper Body']++;
+                    if (ex.day === 'Wednesday' || ex.day === 'Friday') focusCounts['Lower Body']++;
+                    if (ex.day === 'Saturday') focusCounts['Full Body']++;
+                    if (ex.name === 'Stair Climber') focusCounts['Cardio']++;
+                });
+
+                const focusData = {
+                    labels: Object.keys(focusCounts),
+                    datasets: [{
+                        data: Object.values(focusCounts),
+                        backgroundColor: ['#5eead4', '#67e8f9', '#93c5fd', '#c4b5fd'],
+                        borderColor: '#ffffff',
+                        borderWidth: 2,
+                    }]
+                };
+
+                new Chart(ctx, {
+                    type: 'doughnut',
+                    data: focusData,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    font: {
+                                        family: "'Inter', sans-serif"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            },
+
+            renderWeeklyPlan() {
+                let html = `
+                    <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+                         <h2 class="text-2xl font-bold mb-4 text-slate-800">Your Weekly Schedule</h2>
+                         <p class="text-slate-600">Here's the full breakdown of your week. Click on any exercise name to see a detailed description, tips on proper form, and common mistakes to avoid. This view provides the structure for your training, ensuring you hit every muscle group with adequate time for recovery.</p>
+                    </div>
+                    <div class="space-y-8">
+                `;
+                this.data.schedule.forEach(day => {
+                    const dayExercises = this.data.exercises.filter(ex => ex.day === day.day);
+                    html += `
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <h3 class="text-xl font-semibold mb-1">${day.day}</h3>
+                            <p class="text-teal-600 font-medium mb-4">${day.focus}</p>
+                            ${day.focus === 'Rest' ? '<p class="text-slate-500">A day for rest and recovery. Let your muscles rebuild.</p>' : ''}
+                            ${day.focus === 'Active Recovery / Mobility' ? '<p class="text-slate-500">Focus on gentle movement, stretching, and core stability. Go to the Mobility Hub for ideas.</p>' : ''}
+                            <ul class="space-y-3">
+                    `;
+                    dayExercises.forEach(ex => {
+                        html += `
+                            <li class="flex justify-between items-center p-3 bg-slate-50 rounded-md">
+                                <button class="text-left text-slate-700 hover:text-teal-600 font-medium" onclick="app.openModal(${ex.id})">${ex.name}</button>
+                                <span class="text-sm text-slate-500">${ex.sets} set${ex.sets > 1 ? 's' : ''} x ${ex.reps}</span>
+                            </li>
+                        `;
+                    });
+                    html += `</ul></div>`;
+                });
+                html += `</div>`;
+                return html;
+            },
+            
+            renderLibrary(filter = 'all') {
+                 let html = `
+                    <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+                         <h2 class="text-2xl font-bold mb-4 text-slate-800">Exercise Library</h2>
+                         <p class="text-slate-600">This is your complete reference guide for every exercise in your plan. Use the filters below to sort by muscle group. This is a great way to understand which exercises target specific areas, or to find alternatives if needed. Click any exercise to view detailed instructions.</p>
+                         <div id="muscle-filters" class="flex flex-wrap gap-2 mt-4">
+                            <button class="muscle-btn px-3 py-1 text-sm font-medium rounded-full bg-slate-200 hover:bg-slate-300 active" data-filter="all">All</button>
+                 `;
+                 this.data.muscleGroups.forEach(group => {
+                     html += `<button class="muscle-btn px-3 py-1 text-sm font-medium rounded-full bg-slate-200 hover:bg-slate-300" data-filter="${group}">${group}</button>`;
+                 });
+                 html += `</div></div><div id="exercise-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">`;
+
+                 const filteredExercises = filter === 'all' 
+                    ? this.data.exercises 
+                    : this.data.exercises.filter(ex => ex.muscles.includes(filter));
+                
+                 filteredExercises.forEach(ex => {
+                     html += `
+                        <div class="bg-white p-4 rounded-lg shadow-md flex flex-col justify-between">
+                            <div>
+                                <h4 class="font-semibold text-lg text-slate-800">${ex.name}</h4>
+                                <div class="flex flex-wrap gap-1 mt-2">
+                                    ${ex.muscles.map(m => `<span class="text-xs bg-teal-100 text-teal-800 px-2 py-0.5 rounded-full">${m}</span>`).join('')}
+                                </div>
+                            </div>
+                            <button class="mt-4 text-sm text-teal-600 hover:text-teal-800 font-semibold text-right" onclick="app.openModal(${ex.id})">View Details &rarr;</button>
+                        </div>
+                     `;
+                 });
+
+                 html += `</div>`;
+                 if (filteredExercises.length === 0) {
+                     html += `<div class="text-center col-span-full py-12 bg-white rounded-lg shadow-md"><p class="text-slate-500">No exercises found for this muscle group.</p></div>`
+                 }
+                 return html;
+            },
+
+            setupLibraryListeners() {
+                const filterButtons = document.querySelectorAll('.muscle-btn');
+                filterButtons.forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const filter = e.target.dataset.filter;
+                        
+                        filterButtons.forEach(btn => btn.classList.remove('active'));
+                        e.target.classList.add('active');
+
+                        const listContainer = document.getElementById('exercise-list');
+                        const filteredExercises = filter === 'all' 
+                            ? this.data.exercises 
+                            : this.data.exercises.filter(ex => ex.muscles.includes(filter));
+                        
+                        let newListHtml = '';
+                        filteredExercises.forEach(ex => {
+                            newListHtml += `
+                                <div class="bg-white p-4 rounded-lg shadow-md flex flex-col justify-between">
+                                    <div>
+                                        <h4 class="font-semibold text-lg text-slate-800">${ex.name}</h4>
+                                        <div class="flex flex-wrap gap-1 mt-2">
+                                            ${ex.muscles.map(m => `<span class="text-xs bg-teal-100 text-teal-800 px-2 py-0.5 rounded-full">${m}</span>`).join('')}
+                                        </div>
+                                    </div>
+                                    <button class="mt-4 text-sm text-teal-600 hover:text-teal-800 font-semibold text-right" onclick="app.openModal(${ex.id})">View Details &rarr;</button>
+                                </div>
+                            `;
+                        });
+                        listContainer.innerHTML = newListHtml;
+                        if (filteredExercises.length === 0) {
+                             listContainer.innerHTML = `<div class="text-center col-span-full py-12 bg-white rounded-lg shadow-md"><p class="text-slate-500">No exercises found for this muscle group.</p></div>`
+                        }
+                    })
+                });
+            },
+
+            renderMobilityHub() {
+                const warmups = this.data.mobility.filter(m => m.type.includes('Warm-up'));
+                const cooldowns = this.data.mobility.filter(m => m.type.includes('Cool-down'));
+                const recovery = this.data.mobility.filter(m => m.type.includes('Recovery'));
+
+                return `
+                     <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+                         <h2 class="text-2xl font-bold mb-4 text-slate-800">Mobility & Recovery Hub</h2>
+                         <p class="text-slate-600">Proper warm-ups, cool-downs, and active recovery are crucial for performance and injury prevention. This section consolidates all the mobility drills in your plan. Incorporate the warm-ups before your sessions, the cool-downs after, and use the recovery drills on your active recovery day.</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <div>
+                            <h3 class="text-xl font-semibold mb-4 text-center">Warm-up Drills 🔥</h3>
+                            <ul class="space-y-2 bg-white p-4 rounded-lg shadow-md">
+                                ${warmups.map(m => `<li class="p-2 bg-slate-50 rounded"><strong class="text-slate-700">${m.name}:</strong><p class="text-sm text-slate-600">${m.desc}</p></li>`).join('')}
+                            </ul>
+                        </div>
+                         <div>
+                            <h3 class="text-xl font-semibold mb-4 text-center">Cool-down Stretches ❄️</h3>
+                            <ul class="space-y-2 bg-white p-4 rounded-lg shadow-md">
+                                ${cooldowns.map(m => `<li class="p-2 bg-slate-50 rounded"><strong class="text-slate-700">${m.name}:</strong><p class="text-sm text-slate-600">${m.desc}</p></li>`).join('')}
+                            </ul>
+                        </div>
+                         <div>
+                            <h3 class="text-xl font-semibold mb-4 text-center">Active Recovery 🧘</h3>
+                            <ul class="space-y-2 bg-white p-4 rounded-lg shadow-md">
+                                ${recovery.map(m => `<li class="p-2 bg-slate-50 rounded"><strong class="text-slate-700">${m.name}:</strong><p class="text-sm text-slate-600">${m.desc}</p></li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                `;
+            },
+            
+            openModal(exerciseId) {
+                const exercise = this.data.exercises.find(ex => ex.id === exerciseId);
+                if (!exercise) return;
+                
+                this.activeExercise = exercise;
+                this.currentSet = 1; // Reset to set 1 when opening modal
+
+                const modal = document.getElementById('exercise-modal');
+                const modalTitle = document.getElementById('modal-title');
+                const modalBody = document.getElementById('modal-body');
+
+                modalTitle.textContent = exercise.name;
+                modalBody.innerHTML = `
+                    <img src="${exercise.image}" alt="${exercise.name}" class="w-full h-auto object-cover rounded-lg mb-4 max-h-64" onerror="this.onerror=null;this.src='https://placehold.co/600x400/e2e8f0/475569?text=Image+not+found';">
+                    <div class="flex flex-col md:flex-row gap-4 mb-4">
+                        <div class="flex-1 bg-slate-100 p-4 rounded-lg shadow-inner">
+                            <h4 class="font-semibold text-lg mb-2">Set Counter</h4>
+                            <div class="text-4xl font-bold text-center mb-4">Set <span id="current-set-display">${this.currentSet}</span> of ${exercise.sets}</div>
+                            <div class="flex justify-center gap-2">
+                                <button class="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600" onclick="app.nextSet()">➡️ Next Set</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-lg mb-2">Instructions</h4>
+                        <p class="text-slate-600">${exercise.desc}</p>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-lg mb-2">Key Tips ✅</h4>
+                        <p class="text-slate-600">${exercise.tips}</p>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-lg mb-2">Common Mistakes ❌</h4>
+                        <p class="text-slate-600">${exercise.mistakes}</p>
+                    </div>
+                `;
+                
+                modal.classList.add('show');
+            },
+
+            closeModal() {
+                const modal = document.getElementById('exercise-modal');
+                modal.classList.remove('show');
+                this.activeExercise = null; // Clear active exercise
+                this.currentSet = 1; // Reset set counter
+            },
+
+            nextSet() {
+                if (!this.activeExercise) return;
+
+                if (this.currentSet < this.activeExercise.sets) {
+                    this.currentSet++;
+                    document.getElementById('current-set-display').textContent = this.currentSet;
+                } else {
+                    // All sets complete
+                    document.getElementById('modal-title').textContent = "Workout Complete!";
+                    document.getElementById('modal-body').innerHTML = `
+                        <p class="text-center text-xl text-slate-700">You've completed all sets for ${this.activeExercise.name}!</p>
+                        <p class="text-center text-slate-500 mt-4">Great job! You can now close this window.</p>
+                    `;
+                    // Optionally disable the button or change its text
+                    const nextSetButton = document.querySelector('#modal-body button');
+                    if (nextSetButton) {
+                        nextSetButton.textContent = "Finished";
+                        nextSetButton.disabled = true;
+                        nextSetButton.classList.remove('hover:bg-green-600');
+                        nextSetButton.classList.add('bg-gray-400', 'cursor-not-allowed');
+                    }
+                }
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            app.init();
+        });
+    </script>
+
+</body>
+</html>
