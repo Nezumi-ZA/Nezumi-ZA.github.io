@@ -140,15 +140,95 @@
                     { id: 115, name: 'Downward-Facing Dog', type: ['Cool-down', 'Recovery'], desc: 'From a plank position, push your hips up and back to form an inverted V shape. Stretches the entire back of the body.' },
                 ],
                 schedule: [
+                    { day: 'Monday', focus: 'Rest' },
                     { day: 'Tuesday', focus: 'Upper Body + Core' },
                     { day: 'Wednesday', focus: 'Stair Climber Leg Day' },
                     { day: 'Thursday', focus: 'Rest' },
                     { day: 'Friday', focus: 'Lower Body + Core' },
                     { day: 'Saturday', focus: 'Full-Body Strength + Endurance' },
-                    { day: 'Sunday', focus: 'Active Recovery / Mobility' },
-                    { day: 'Monday', focus: 'Rest' }
+                    { day: 'Sunday', focus: 'Active Recovery / Mobility' }
                 ],
-                muscleGroups: ['Shoulders', 'Back', 'Chest', 'Biceps', 'Triceps', 'Legs', 'Glutes', 'Hamstrings', 'Calves', 'Core', 'Full Body', 'Cardio']
+                muscleGroups: ['Shoulders', 'Back', 'Chest', 'Biceps', 'Triceps', 'Legs', 'Glutes', 'Hamstrings', 'Calves', 'Core', 'Full Body', 'Cardio'],
+                dailyRoutines: {
+                    'Monday': {
+                        warmup: [], // No specific warm-up for rest day
+                        cooldown: [] // No specific cool-down for rest day
+                    },
+                    'Tuesday': {
+                        warmup: [
+                            { name: 'Arm Circles', desc: 'Perform gradually increasing circles, both forward and backward. This mobilizes the shoulder joint, crucial for presses and rows.' },
+                            { name: 'Torso Twists', desc: 'Gently twist the torso from side to side. This prepares the core and spine for rotational movements like Russian Twists.' },
+                            { name: 'Cat-Cow Stretch', desc: 'On hands and knees, arch and round the back slowly. This improves spinal mobility, which is fundamental for maintaining a neutral spine during rows and presses.' },
+                            { name: 'Shoulder Rolls/Arm Swings', desc: 'Execute forward and backward rolls or swings with the arms. These further mobilize the shoulder joint, ensuring it is ready for overhead and pulling movements.' }
+                        ],
+                        cooldown: [
+                            { name: 'Cross Body Shoulder Stretch', desc: 'Use one hand to gently pull the opposite arm across the body towards the chest, feeling the stretch in the shoulder.' },
+                            { name: 'Overhead Triceps and Shoulder Stretch', desc: 'Extend one arm overhead, bend the elbow to place the hand between the shoulder blades, and use the other hand to gently pull the elbow, stretching the triceps and shoulder.' },
+                            { name: 'Standing Chest Opener', desc: 'Interlock fingers behind the lower back, squeeze the shoulder blades together, and slowly pull the arms down and slightly up to stretch the pectorals and front of the shoulders.' },
+                            { name: 'Child\'s Pose', desc: 'From a kneeling position, sit back on your heels and fold forward, extending the arms straight out, resting the forehead on the floor. This provides a gentle stretch for the shoulders, back, and hips.' },
+                            { name: 'Supine Spinal Twist', desc: 'Lie face up, hug knees into the chest, then gently drop the knees to one side while simultaneously twisting the torso in the opposite direction. This targets the back and obliques, promoting spinal mobility.' }
+                        ]
+                    },
+                    'Wednesday': {
+                        warmup: [
+                            { name: 'Leg Swings', desc: 'Perform forward/backward and side-to-side leg swings. This improves hip mobility, which is essential for the hip hinge movement in Romanian Deadlifts and for comfortable glute bridges.' },
+                            { name: 'Ankle Circles', desc: 'Rotate the ankles in both clockwise and counter-clockwise directions. Ankle flexibility is crucial for stability on the stair climber and for achieving a full range of motion in calf raises.' },
+                            { name: 'Squat to Forward Fold', desc: 'Start standing, grab toes/ankles, drop into a deep squat, then lift hips to a forward fold. This addresses hamstring, lower back, and ankle mobility, all vital for proper RDL and glute bridge form.' },
+                            { name: 'Hip Circles', desc: 'Stand with hands on hips and make large circles with your hips to lubricate the joint.' },
+                            { name: 'Reverse Lunge with Side Bend', desc: 'Step one leg back into a reverse lunge, then reach the arm overhead and bend the torso to the side. This targets hip flexor and lower back mobility, which can become tight from prolonged sitting or intense leg work.' }
+                        ],
+                        cooldown: [
+                            { name: 'Hamstring Stretch', desc: 'Lie on the back, raise one leg, hold it below the knee, and gently pull it towards the chest while keeping the leg straight. Alternatively, a seated hamstring stretch can be performed.' },
+                            { name: 'Calf Stretch', desc: 'Step one leg forward, keeping it bent, and lean slightly forward. Keep the back leg straight and try to lower the heel to the ground, feeling the stretch in the calf.' },
+                            { name: 'Thigh (Quad) Stretch', desc: 'Lie on one side, grab the top of the opposite foot, and gently pull the heel towards the buttock to stretch the front of the thigh, keeping the knees touching.' },
+                            { name: 'Hip Flexor Stretch', desc: 'Kneel on the floor, step one foot forward so the leg forms a right angle, and gently push the back hip forward to feel a stretch along the front of the hip flexor.' },
+                            { name: 'Glutes Stretch', desc: 'Stand with feet shoulder-width apart, rest one ankle just above the opposite knee, and bend the standing knee into a single-leg squat, gently pushing down on the raised knee.' },
+                            { name: 'Downward Dog', desc: 'Start on hands and knees, then lift the hips into the air, straightening the legs to form an upside-down V shape. This provides a comprehensive stretch for the hamstrings, calves, and back.' }
+                        ]
+                    },
+                    'Friday': {
+                        warmup: [
+                            { name: 'Lateral Lunge to Plank Walkout', desc: 'Perform a lateral lunge, then reach forward and walk the hands out to a plank position. This mobilizes the inner thighs and engages the core, preparing for multi-planar movements.' },
+                            { name: 'Wide Squat with Internal Rotation', desc: 'From a wide squat stance, rotate one leg by pivoting the foot, knee, and hip inward. This specifically targets hip mobility, which is crucial for achieving depth in squats.' },
+                            { name: 'Single-Leg Deadlift to Knee Drive', desc: 'Hinge at the hips into a single-leg deadlift, then drive the knee towards the chest. This improves hamstring, glute, and lower back mobility, while also enhancing balance, which is beneficial for exercises like Bulgarian split squats.' },
+                            { name: 'Low Lunge with Rotation', desc: 'From a plank position, step one foot forward outside the hand, then rotate the torso. This mobilizes hip flexors, the mid-back, and shoulders, all of which contribute to a stable and effective squat and deadlift.' }
+                        ],
+                        cooldown: [
+                            { name: 'Buttock Stretch', desc: 'Lie on the back, bring knees to chest, cross one leg over the opposite thigh, and grasp the back of the non-crossed thigh, pulling it towards the chest.' },
+                            { name: 'Inner Thigh Stretch (Butterfly)', desc: 'Sit with a straight back and legs bent, bringing the soles of the feet together. Hold onto the feet and gently try to lower the knees towards the floor.' },
+                            { name: 'Runner\'s Lunge', desc: 'Stand with feet hip-width apart, place hands on the floor in front of feet, and take a large step back with one foot, keeping the back leg mostly straight and the front knee at a right angle. Stretches hip flexors and quads.' },
+                            { name: 'Child\'s Pose', desc: 'Kneel on the floor with knees slightly wider than hip-width, big toes together. Sit back on heels and fold forward, extending arms straight out. Stretches hips, back, and shoulders.' },
+                            { name: 'Cat-Cow Stretch', desc: 'On hands and knees, arch the back upward ("cat") and then arch it downward ("cow") slowly and in sync with the breath. Promotes spinal mobility and releases tension in the back.' }
+                        ]
+                    },
+                    'Saturday': {
+                        warmup: [
+                            { name: 'Jump Rope', desc: 'An excellent choice for elevating heart rate, improving coordination, and warming up calves, ankles, and shoulders.' },
+                            { name: 'Arm Swings', desc: 'Perform large, controlled arm swings, both forward and backward.' },
+                            { name: 'Leg Swings', desc: 'Execute forward/backward and side-to-side leg swings.' },
+                            { name: 'Torso Twists', desc: 'Gently rotate the torso from side to side.' },
+                            { name: 'Cat-Cow Stretch', desc: 'On hands and knees, perform controlled arching and rounding of the back.' },
+                            { name: 'World\'s Greatest Stretch (Low Lunge with Rotation)', desc: 'From a plank position, step one foot forward outside the hand, then rotate the torso towards the front leg. This comprehensive stretch mobilizes hip flexors, calves, glutes, hamstrings, chest, shoulders, and obliques.' }
+                        ],
+                        cooldown: [
+                            { name: 'Standing Chest Opener', desc: 'Stand with feet shoulder-width apart, interlock fingers behind the lower back, and slowly pull both arms down and slightly up to stretch the chest and shoulders.' },
+                            { name: 'Overhead Triceps and Shoulder Stretch', desc: 'Bring one arm overhead, bend the elbow, and place the hand between the shoulder blades; use the other hand to gently pull the elbow to deepen the stretch in the triceps and shoulder.' },
+                            { name: 'Child\'s Pose', desc: 'Kneel, sit back on the heels, and stretch the arms forward, resting the forehead on the floor. This provides a gentle stretch for the back, hips, and shoulders.' },
+                            { name: 'Downward-Facing Dog', desc: 'Start on hands and knees, then lift the tailbone towards the ceiling, straightening the legs to form an inverted V-shape. This offers a comprehensive stretch for the hamstrings, calves, and the entire back.' },
+                            { name: 'Kneeling Hip Flexor Stretch', desc: 'Kneel on the floor, step one foot forward so the leg forms a right angle, and gently push the back hip forward to feel a stretch along the front of the hip flexor.' },
+                            { name: 'Hamstring Stretch', desc: 'Perform a seated or lying hamstring stretch, reaching for the toes or pulling the leg towards the chest.' },
+                            { name: 'Calf Stretch', desc: 'Execute a standing calf stretch against a wall or step, pressing the heel into the ground.' }
+                        ]
+                    },
+                    'Sunday': { // Active Recovery / Mobility
+                        warmup: [
+                            { name: 'Gentle Full Body Activation', desc: 'Focus on gentle, fluid movements to prepare the body for mobility work.' }
+                        ],
+                        cooldown: [
+                            { name: 'Restorative Stretching', desc: 'Longer holds (30-60 seconds per stretch) focusing on relaxation and improving movement quality.' }
+                        ]
+                    }
+                }
             },
 
             init() {
@@ -284,18 +364,48 @@
                             <h3 class="text-xl font-semibold mb-1">${day.day}</h3>
                             <p class="text-teal-600 font-medium mb-4">${day.focus}</p>
                             ${day.focus === 'Rest' ? '<p class="text-slate-500">A day for rest and recovery. Let your muscles rebuild.</p>' : ''}
-                            ${day.focus === 'Active Recovery / Mobility' ? '<p class="text-slate-500">Focus on gentle movement, stretching, and core stability. Go to the Mobility Hub for ideas.</p>' : ''}
-                            <ul class="space-y-3">
+                            ${day.focus === 'Active Recovery / Mobility' ? '<p class="text-slate-500">Focus on gentle movement, stretching, and core stability. Details available in the <button class="text-teal-600 underline" onclick="app.currentView=\'mobility\'; app.renderView();">Mobility Hub</button>.</p>' : ''}
                     `;
-                    dayExercises.forEach(ex => {
-                        html += `
-                            <li class="flex justify-between items-center p-3 bg-slate-50 rounded-md">
-                                <button class="text-left text-slate-700 hover:text-teal-600 font-medium" onclick="app.openModal(${ex.id})">${ex.name}</button>
-                                <span class="text-sm text-slate-500">${ex.sets} set${ex.sets > 1 ? 's' : ''} x ${ex.reps}</span>
-                            </li>
-                        `;
-                    });
-                    html += `</ul></div>`;
+
+                    if (day.focus !== 'Rest' && day.focus !== 'Active Recovery / Mobility') {
+                        // Add Warm-up section for non-rest/mobility days
+                        const dailyRoutine = this.data.dailyRoutines[day.day];
+                        if (dailyRoutine && dailyRoutine.warmup && dailyRoutine.warmup.length > 0) {
+                            html += `
+                                <div class="mt-4">
+                                    <h4 class="font-semibold text-lg mb-2 text-slate-700">Warm-up Drills 🔥</h4>
+                                    <ul class="list-disc list-inside text-slate-600 space-y-1">
+                                        ${dailyRoutine.warmup.map(drill => `<li><strong>${drill.name}:</strong> ${drill.desc}</li>`).join('')}
+                                    </ul>
+                                </div>
+                            `;
+                        }
+
+                        // Add Exercises list
+                        html += `<ul class="space-y-3 mt-4">`;
+                        dayExercises.forEach(ex => {
+                            html += `
+                                <li class="flex justify-between items-center p-3 bg-slate-50 rounded-md">
+                                    <button class="text-left text-slate-700 hover:text-teal-600 font-medium" onclick="app.openModal(${ex.id})">${ex.name}</button>
+                                    <span class="text-sm text-slate-500">${ex.sets} set${ex.sets > 1 ? 's' : ''} x ${ex.reps}</span>
+                                </li>
+                            `;
+                        });
+                        html += `</ul>`;
+
+                        // Add Cool-down section for non-rest/mobility days
+                        if (dailyRoutine && dailyRoutine.cooldown && dailyRoutine.cooldown.length > 0) {
+                            html += `
+                                <div class="mt-4">
+                                    <h4 class="font-semibold text-lg mb-2 text-slate-700">Cool-down Stretches ❄️</h4>
+                                    <ul class="list-disc list-inside text-slate-600 space-y-1">
+                                        ${dailyRoutine.cooldown.map(drill => `<li><strong>${drill.name}:</strong> ${drill.desc}</li>`).join('')}
+                                    </ul>
+                                </div>
+                            `;
+                        }
+                    }
+                    html += `</div>`; // Close day div
                 });
                 html += `</div>`;
                 return html;
