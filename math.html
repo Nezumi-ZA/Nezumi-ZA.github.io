@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Mathematical Study Guide</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chosen Palette: Serene Scholar -->
+    <!-- Application Structure Plan: A single-page application with a fixed sidebar for navigation between major mathematical topics (Number Theory, Sequences, Probability, Geometry, Calculus). Each topic is a full-screen section that users can scroll to. This structure was chosen for its simplicity and clear content separation, allowing users to focus on one subject at a time without losing context or navigation. Interactive elements like calculators (GCD/LCM), dynamic example generators (sequences), and step-by-step problem solvers (calculus) are embedded within each section to transform passive reading into an active learning experience. The goal is to create a tool, not just a document. -->
+    <!-- Visualization & Content Choices: 
+        - Number Theory: Goal=Inform/Practice. Method=Interactive Calculators (HTML forms + JS) for GCD/LCM; detailed text explanation and static examples for primes in computing. Interaction=User input for numbers, instant calculation of GCD/LCM. Justification=Makes abstract concepts practical and testable. Library=Vanilla JS.
+        - Sequences: Goal=Understand/Compare. Method=Dynamic AP/GP generators. Interaction=User inputs parameters (start, diff/ratio), app generates terms and sums. Justification=Visually demonstrates how sequences progress. Library=Vanilla JS.
+        - Probability: Goal=Inform/Compare. Method=Bar chart for distributions (Chart.js), text blocks for concepts and worked examples. Interaction=Buttons to switch between Binomial and Normal distribution examples and view their properties. Justification=Visually simplifies complex probability concepts. Library=Chart.js.
+        - Geometry & Vectors: Goal=Inform/Visualize. Method=Dynamic text and simple diagrams (HTML/CSS). Interaction=User input for points/vectors to calculate distance, slope, vector ops. Justification=Reinforces foundational geometric and vector calculations. Library=Vanilla JS.
+        - Calculus: Goal=Understand/Practice. Method=Multi-step problem solvers for Differentiation and Integration, and Maxima/Minima analysis for polynomials. Interaction=Users select rules (Product, Quotient, Chain) and see problems solved step-by-step. Justification=Breaks down complex calculus procedures into manageable steps. Library=Vanilla JS.
+        - Maxima/Minima: Goal=Analyze. Method=Textual analysis of critical points based on derivative calculations. Interaction=User inputs a function, app performs derivative calculations and provides analysis. Justification=Helps understand the application of derivatives for optimization. Library=Vanilla JS.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        :root {
+            --bg-main: #F8F5F2; /* Warm Neutral */
+            --bg-secondary: #FFFFFF;
+            --text-primary: #3D405B; /* Deep Blue-Gray */
+            --text-secondary: #8D99AE;
+            --accent: #E07A5F; /* Muted Coral */
+            --accent-hover: #D46A4D;
+            --border-color: #DDE1E6;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            scroll-behavior: smooth;
+        }
+        .nav-link {
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+        }
+        .nav-link.active, .nav-link:hover {
+            background-color: var(--accent-hover);
+            color: white;
+            border-left-color: var(--bg-secondary);
+        }
+        .content-section {
+            padding-top: 4rem;
+        }
+        h1, h2, h3, h4 {
+            font-weight: 700;
+        }
+        .card {
+            background-color: var(--bg-secondary);
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            transition: transform 0.2s ease-in-out;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        .btn {
+            background-color: var(--accent);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            transition: background-color 0.3s ease;
+            cursor: pointer;
+        }
+        .btn:hover {
+            background-color: var(--accent-hover);
+        }
+        .input-field {
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            width: 100%;
+        }
+        .solution-box {
+            background-color: #F8F9FA;
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-top: 1rem;
+            font-family: 'Courier New', Courier, monospace;
+            color: #212529;
+            white-space: pre-wrap;
+        }
+        .chart-container {
+            position: relative; 
+            width: 100%; 
+            max-width: 600px; 
+            margin-left: auto; 
+            margin-right: auto; 
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        .section-intro {
+            background-color: var(--bg-secondary);
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 4px -1px rgb(0 0 0 / 0.05), 0 1px 2px -1px rgb(0 0 0 / 0.05);
+        }
+        .exercise-list {
+            list-style-type: decimal;
+            margin-left: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .exercise-list li {
+            margin-bottom: 0.5rem;
+        }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="flex">
+
+    <nav class="fixed top-0 left-0 h-full bg-slate-800 text-white w-64 p-5 flex flex-col space-y-2">
+        <h2 class="text-xl font-bold mb-4">Study Guide</h2>
+        <a href="#number-theory" class="nav-link p-3 rounded-md active">Number Theory</a>
+        <a href="#sequences" class="nav-link p-3 rounded-md">Sequences & Progressions</a>
+        <a href="#probability" class="nav-link p-3 rounded-md">Probability</a>
+        <a href="#geometry" class="nav-link p-3 rounded-md">Geometry & Vectors</a>
+        <a href="#calculus" class="nav-link p-3 rounded-md">Calculus</a>
+    </nav>
+
+    <main class="ml-64 p-10 w-full">
+
+        <header class="mb-12 text-center">
+            <h1 class="text-5xl font-bold text-gray-800">Mathematical Problem Solving</h1>
+            <p class="text-xl text-gray-500 mt-2">An Interactive Study Guide</p>
+        </header>
+
+        <section id="number-theory" class="content-section min-h-screen">
+            <h2 class="text-4xl font-bold mb-6 border-b-4 border-accent pb-2">Number Theory</h2>
+            <div class="section-intro">
+                <p>Number theory is a branch of pure mathematics devoted primarily to the study of integers and integer-valued functions. It explores properties of numbers like primality, divisibility, and the relationships between them. In this section, you'll learn about GCD, LCM, and the crucial role of prime numbers in computing.</p>
+            </div>
+            <div class="grid md:grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="card p-6">
+                    <h3 class="text-2xl font-bold mb-4">Greatest Common Divisor (GCD) & Least Common Multiple (LCM)</h3>
+                    <p class="text-gray-600 mb-2">The <strong>Greatest Common Divisor (GCD)</strong> of two or more integers is the largest positive integer that divides each of the integers without leaving a remainder. It's also known as the Highest Common Factor (HCF).</p>
+                    <p class="text-gray-600 mb-4">The <strong>Least Common Multiple (LCM)</strong> of two or more integers is the smallest positive integer that is a multiple of each of the integers.</p>
+                    <h4 class="text-xl font-semibold mb-2">Example: GCD and LCM of 12 and 18</h4>
+                    <p class="text-gray-700 mb-2"><strong>Factors of 12:</strong> 1, 2, 3, 4, 6, 12</p>
+                    <p class="text-gray-700 mb-2"><strong>Factors of 18:</strong> 1, 2, 3, 6, 9, 18</p>
+                    <p class="text-gray-700 mb-4"><strong>Common Factors:</strong> 1, 2, 3, 6. The largest is 6. So, GCD(12, 18) = 6.</p>
+                    <p class="text-gray-700 mb-2"><strong>Multiples of 12:</strong> 12, 24, 36, 48, ...</p>
+                    <p class="text-gray-700 mb-4"><strong>Multiples of 18:</strong> 18, 36, 54, ...</p>
+                    <p class="text-gray-700 mb-4">The smallest common multiple is 36. So, LCM(12, 18) = 36.</p>
+
+                    <h4 class="text-xl font-semibold mb-2">Practice Tool: GCD & LCM Calculator</h4>
+                    <p class="text-gray-600 mb-4">Enter two numbers to find their GCD and LCM.</p>
+                    <div class="space-y-4">
+                        <input type="number" id="num1" placeholder="First number" class="input-field">
+                        <input type="number" id="num2" placeholder="Second number" class="input-field">
+                        <button id="calc-gcd-lcm" class="btn w-full">Calculate</button>
+                    </div>
+                    <div id="gcd-lcm-result" class="solution-box mt-4 hidden"></div>
+                    <h4 class="text-xl font-semibold mb-2 mt-6">Practice Exercises:</h4>
+                    <ol class="exercise-list text-gray-700">
+                        <li>Find the GCD of 56 and 98.</li>
+                        <li>Find the LCM of 12 and 30.</li>
+                        <li>If the GCD of two numbers is 5 and their product is 150, what is their LCM?</li>
+                    </ol>
+                </div>
+                <div class="card p-6">
+                    <h3 class="text-2xl font-bold mb-4">Prime Numbers in Computing</h3>
+                    <p class="text-gray-600 mb-4"><strong>Prime numbers</strong> are integers greater than 1 that have only two positive divisors: 1 and themselves. They are foundational in various computing fields due to their unique mathematical properties.</p>
+                    <h4 class="text-xl font-semibold mb-2">Applications:</h4>
+                    <ul class="list-disc list-inside text-gray-600 mb-4">
+                        <li class="mb-2"><strong>Cryptography:</strong> Prime numbers are the backbone of modern public-key cryptography algorithms (e.g., RSA). The security relies on the computational infeasibility of factoring large composite numbers (products of two large primes) back into their original prime factors.</li>
+                        <li class="mb-2"><strong>Random Number Generation:</strong> Used to generate pseudo-random numbers crucial for simulations, cryptographic keys, and gaming. Using prime moduli helps create sequences with long periods, ensuring randomness.</li>
+                        <li class="mb-2"><strong>Hash Functions:</strong> Often used as moduli in hash functions to evenly distribute keys in hash tables and minimize collisions, essential for efficient data retrieval in databases and blockchain technologies.</li>
+                        <li class="mb-2"><strong>Error Detection and Correction (ECC):</strong> Utilized in certain coding theory applications (e.g., Reed-Solomon codes) to build polynomial fields that enable robust detection and correction of errors in data transmission and storage.</li>
+                    </ul>
+                    <div class="bg-gray-100 p-4 rounded-lg">
+                        <h4 class="font-semibold">Example: RSA Encryption Principle</h4>
+                        <p class="text-sm text-gray-700 mt-2">1. Two large prime numbers, `p` and `q`, are chosen.</p>
+                        <p class="text-sm text-gray-700 mt-1">2. Their product, `n = p * q`, is calculated. This `n` is part of the public key.</p>
+                        <p class="text-sm text-gray-700 mt-1">3. While it's easy to compute `n`, it's extremely hard to find `p` and `q` if you only know `n` (for very large `n`).</p>
+                        <p class="text-sm text-gray-700 mt-1">4. This "one-way" mathematical trapdoor is the foundation of secure online communication.</p>
+                    </div>
+                    <h4 class="text-xl font-semibold mb-2 mt-6">Practice Exercises:</h4>
+                    <ol class="exercise-list text-gray-700">
+                        <li>Explain the role of "large prime numbers" in public-key encryption.</li>
+                        <li>How do prime numbers contribute to the "randomness" of pseudo-random number generators?</li>
+                    </ol>
+                </div>
+            </div>
+        </section>
+
+        <section id="sequences" class="content-section min-h-screen">
+            <h2 class="text-4xl font-bold mb-6 border-b-4 border-accent pb-2">Sequences & Progressions</h2>
+            <div class="section-intro">
+                <p>A sequence is an ordered list of numbers. Progressions are special types of sequences where there's a constant difference (Arithmetic Progression) or a constant ratio (Geometric Progression) between consecutive terms. This section also covers multiplicative inverses in modular arithmetic, a concept useful in cryptography.</p>
+            </div>
+            <div class="grid md:grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="card p-6">
+                    <h3 class="text-2xl font-bold mb-4">Arithmetic Progression (AP)</h3>
+                    <p class="text-gray-600 mb-2">An <strong>Arithmetic Progression (AP)</strong> is a sequence where the difference between consecutive terms is constant. This is called the <strong>common difference (d)</strong>. The first term is 'a'.</p>
+                    <p class="text-gray-600 mb-2"><strong>Formula for the nth term (T<sub>n</sub>):</strong> T<sub>n</sub> = a + (n-1)d</p>
+                    <p class="text-gray-600 mb-4"><strong>Formula for the sum of the first n terms (S<sub>n</sub>):</strong> S<sub>n</sub> = n/2 [2a+(n-1)d] or S<sub>n</sub> = n/2 (a+l) (where l is the last term)</p>
+                    <h4 class="text-xl font-semibold mb-2">Example:</h4>
+                    <p class="text-gray-700 mb-4">Find the 5th term and sum of first 5 terms for AP: 3, 7, 11, ...</p>
+                    <p class="text-gray-700 mb-2">Here, a=3, d=4.</p>
+                    <p class="text-gray-700 mb-2"><strong>T<sub>5</sub> = 3 + (5-1)4 = 3 + 16 = 19</strong></p>
+                    <p class="text-gray-700 mb-4"><strong>S<sub>5</sub> = 5/2 [2(3)+(5-1)4] = 5/2 [6+16] = 5/2 (22) = 55</strong></p>
+                    <h4 class="text-xl font-semibold mb-2">Practice Tool: AP Generator</h4>
+                    <p class="text-gray-600 mb-4">Enter AP parameters to generate terms and sum.</p>
+                    <div class="space-y-4">
+                        <input type="number" id="ap-start" placeholder="First Term (a)" class="input-field">
+                        <input type="number" id="ap-diff" placeholder="Common Difference (d)" class="input-field">
+                        <input type="number" id="ap-terms" placeholder="# of Terms to show" class="input-field">
+                        <button id="calc-ap" class="btn w-full">Generate AP</button>
+                    </div>
+                    <div id="ap-result" class="solution-box mt-4 hidden"></div>
+                    <h4 class="text-xl font-semibold mb-2 mt-6">Practice Exercises:</h4>
+                    <ol class="exercise-list text-gray-700">
+                        <li>Find the 10th term of the arithmetic sequence 3, 7, 11, 15, ....</li>
+                        <li>The 6th term of an arithmetic sequence is 20, and the common difference is 3. Find the first term.</li>
+                    </ol>
+                </div>
+                <div class="card p-6">
+                    <h3 class="text-2xl font-bold mb-4">Geometric Progression (GP)</h3>
+                    <p class="text-gray-600 mb-2">A <strong>Geometric Progression (GP)</strong> is a sequence where each term is found by multiplying the previous one by a constant, non-zero number called the <strong>common ratio (r)</strong>. The first term is 'a'.</p>
+                    <p class="text-gray-600 mb-2"><strong>Formula for the nth term (T<sub>n</sub>):</strong> T<sub>n</sub> = ar<sup>n-1</sup></p>
+                    <p class="text-gray-600 mb-2"><strong>Formula for the sum of the first n terms (S<sub>n</sub>):</strong> S<sub>n</sub> = a(1-r<sup>n</sup>)/(1-r) (if |r|<1) or S<sub>n</sub> = a(r<sup>n</sup>-1)/(r-1) (if |r|>1)</p>
+                    <p class="text-gray-600 mb-4"><strong>Formula for the sum of an infinite geometric series (S<sub>∞</sub>):</strong> S<sub>∞</sub> = a/(1-r) (if |r|<1)</p>
+                    <h4 class="text-xl font-semibold mb-2">Example:</h4>
+                    <p class="text-gray-700 mb-4">Find the 4th term and sum of first 4 terms for GP: 2, 6, 18, ...</p>
+                    <p class="text-gray-700 mb-2">Here, a=2, r=3.</p>
+                    <p class="text-gray-700 mb-2"><strong>T<sub>4</sub> = 2 x 3<sup>4-1</sup> = 2 x 3<sup>3</sup> = 2 x 27 = 54</strong></p>
+                    <p class="text-gray-700 mb-4"><strong>S<sub>4</sub> = 2(3<sup>4</sup>-1)/(3-1) = 2(81-1)/2 = 80</strong></p>
+                    <h4 class="text-xl font-semibold mb-2">Practice Tool: GP Generator</h4>
+                    <p class="text-gray-600 mb-4">Enter GP parameters to generate terms and sum.</p>
+                     <div class="space-y-4">
+                        <input type="number" id="gp-start" placeholder="First Term (a)" class="input-field">
+                        <input type="number" id="gp-ratio" placeholder="Common Ratio (r)" class="input-field">
+                        <input type="number" id="gp-terms" placeholder="# of Terms to show" class="input-field">
+                        <button id="calc-gp" class="btn w-full">Generate GP</button>
+                    </div>
+                    <div id="gp-result" class="solution-box mt-4 hidden"></div>
+                    <h4 class="text-xl font-semibold mb-2 mt-6">Multiplicative Inverses in Modular Arithmetic</h4>
+                    <p class="text-gray-600 mb-2">The multiplicative inverse of an integer 'a' modulo 'm' is an integer 'x' such that (a ⋅ x) is congruent to 1 mod m. The inverse exists if and only if 'a' and 'm' are coprime (GCD(a,m) = 1).</p>
+                    <h4 class="text-xl font-semibold mb-2">Example: Inverse of 5 mod 11</h4>
+                    <p class="text-gray-700 mb-4">We are looking for x such that 5x is congruent to 1 mod 11. By testing values or using the Extended Euclidean Algorithm, we find x=9, because 5 x 9 = 45, and 45 mod 11 = 1.</p>
+                    <h4 class="text-xl font-semibold mb-2 mt-6">Practice Exercises:</h4>
+                    <ol class="exercise-list text-gray-700">
+                        <li>Find the 10th term of an AP whose first term is 5 and the common difference is 2.</li>
+                        <li>The first term of a GP is 3 and the common ratio is 2. Find the sum of the first 6 terms.</li>
+                        <li>Find the multiplicative inverse of 7 modulo 13.</li>
+                    </ol>
+                </div>
+            </div>
+        </section>
+
+        <section id="probability" class="content-section min-h-screen">
+            <h2 class="text-4xl font-bold mb-6 border-b-4 border-accent pb-2">Probability</h2>
+            <div class="section-intro">
+                <p>Probability quantifies the likelihood of events, from simple coin flips to complex system failures. This section covers basic probability concepts, discrete random variables, and key distributions like Binomial and Normal, crucial for data analysis and modeling in computing.</p>
+            </div>
+            <div class="grid md:grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="card p-6">
+                    <h3 class="text-2xl font-bold mb-4">Basic Probability & Discrete Random Variables</h3>
+                    <p class="text-gray-600 mb-2"><strong>Probability (P(A)):</strong> A measure of the likelihood of an event occurring, between 0 and 1. P(A) = (Number of favorable outcomes) / (Total number of possible outcomes)</p>
+                    <p class="text-gray-600 mb-4"><strong>Discrete Random Variable:</strong> A variable that can take on a countable number of distinct values (e.g., number of heads in coin tosses). Its <strong>Expected Value (E(X))</strong> is the sum of each value multiplied by its probability: E(X) = Sum of (x * P(X=x)).</p>
+                    <h4 class="text-xl font-semibold mb-2">Example: Expected Bugs</h4>
+                    <p class="text-gray-700 mb-2">Bugs found per day (X) and P(X=x): 0 (0.1), 1 (0.3), 2 (0.4), 3 (0.2).</p>
+                    <p class="text-gray-700 mb-4"><strong>E(X) = (0 x 0.1) + (1 x 0.3) + (2 x 0.4) + (3 x 0.2) = 0 + 0.3 + 0.8 + 0.6 = 1.7 bugs.</strong></p>
+                    <h4 class="text-xl font-semibold mb-2">Practice Exercises:</h4>
+                    <ol class="exercise-list text-gray-700">
+                        <li>A fair coin is tossed three times. What is the probability of getting exactly two heads?</li>
+                        <li>In a cache memory system, there is a 70% chance of a cache hit. What is the probability of two consecutive cache misses?</li>
+                        <li>A random variable X represents the number of heads in two coin tosses. Calculate the expected number of heads.</li>
+                    </ol>
+                </div>
+                <div class="card p-6">
+                    <h3 class="text-2xl font-bold mb-4">Probability Distributions</h3>
+                    <p class="text-gray-600 mb-4">Explore visual representations of Binomial and Normal distributions. These are foundational concepts for modeling random events in computing and data science.</p>
+                    <h4 class="text-xl font-semibold mb-2">Binomial Distribution:</h4>
+                    <p class="text-gray-600 mb-2">Models the number of successes in a fixed number of independent trials. Formula: P(X=k) = (n choose k) * p<sup>k</sup> * (1-p)<sup>n-k</sup>.</p>
+                    <h4 class="text-xl font-semibold mb-2">Normal Distribution:</h4>
+                    <p class="text-gray-600 mb-2">A continuous, symmetric "bell curve" distribution characterized by its mean (mu) and standard deviation (sigma). Its Z-score is Z = (X - mu) / sigma.</p>
+                    <div class="chart-container mx-auto">
+                        <canvas id="probabilityChart"></canvas>
+                    </div>
+                    <div class="mt-6 flex justify-center space-x-4">
+                        <button id="show-binomial" class="btn">Binomial Distribution</button>
+                        <button id="show-normal" class="btn">Normal Distribution</button>
+                    </div>
+                    <div id="prob-explanation" class="mt-6 p-4 bg-gray-100 rounded-lg"></div>
+                    <h4 class="text-xl font-semibold mb-2 mt-6">Practice Exercises:</h4>
+                    <ol class="exercise-list text-gray-700">
+                        <li>In a binomial experiment with 4 independent trials, p=0.5. What is the probability of exactly 2 successes?</li>
+                        <li>A company manufactures smartphones. Battery life is normally distributed with mu=30 hours, sigma=4 hours. What is the probability of a battery life less than 25 hours?</li>
+                    </ol>
+                </div>
+            </div>
+        </section>
+
+        <section id="geometry" class="content-section min-h-screen">
+            <h2 class="text-4xl font-bold mb-6 border-b-4 border-accent pb-2">Geometry & Vectors</h2>
+            <div class="section-intro">
+                <p>Geometry and vectors are essential for understanding spatial relationships and transformations, critical in computer graphics, game development, and robotics. This section covers coordinate geometry basics and vector operations.</p>
+            </div>
+            <div class="grid md:grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="card p-6">
+                    <h3 class="text-2xl font-bold mb-4">Coordinate Geometry</h3>
+                    <p class="text-gray-600 mb-2"><strong>Coordinate geometry</strong> uses a coordinate system (x-axis, y-axis) to locate points and describe geometric shapes algebraically.</p>
+                    <p class="text-gray-600 mb-2"><strong>Distance Formula:</strong> Between (x<sub>1</sub>, y<sub>1</sub>) and (x<sub>2</sub>, y<sub>2</sub>): square root of ((x<sub>2</sub>-x<sub>1</sub>)<sup>2</sup> + (y<sub>2</sub>-y<sub>1</sub>)<sup>2</sup>)</p>
+                    <p class="text-gray-600 mb-4"><strong>Slope (m):</strong> Between (x<sub>1</sub>, y<sub>1</sub>) and (x<sub>2</sub>, y<sub>2</sub>): m = (y<sub>2</sub>-y<sub>1</sub>) / (x<sub>2</sub>-x<sub>1</sub>)</p>
+                    <h4 class="text-xl font-semibold mb-2">Example: Distance & Slope for P(2,3) and Q(5,7)</h4>
+                    <p class="text-gray-700 mb-2">Distance: square root of ((5-2)<sup>2</sup>+(7-3)<sup>2</sup>) = square root of (3<sup>2</sup>+4<sup>2</sup>) = square root of (9+16) = square root of 25 = 5</p>
+                    <p class="text-gray-700 mb-4">Slope: (7-3)/(5-2) = 4/3 approximately 1.3333</p>
+                    <h4 class="text-xl font-semibold mb-2">Practice Tool: Coordinate Geometry</h4>
+                    <p class="text-gray-600 mb-4">Calculate the distance and slope between two points.</p>
+                    <div class="space-y-4">
+                        <input type="text" id="point1" placeholder="Point 1 (e.g., 2,5)" class="input-field">
+                        <input type="text" id="point2" placeholder="Point 2 (e.g., 6,9)" class="input-field">
+                        <button id="calc-geometry" class="btn w-full">Calculate</button>
+                    </div>
+                    <div id="geometry-result" class="solution-box mt-4 hidden"></div>
+                    <h4 class="text-xl font-semibold mb-2 mt-6">Practice Exercises:</h4>
+                    <ol class="exercise-list text-gray-700">
+                        <li>Find the distance between points A(0,0) and C(4,3).</li>
+                        <li>Find the equation of the line passing through C(1,1) and D(3,7).</li>
+                    </ol>
+                </div>
+                <div class="card p-6">
+                    <h3 class="text-2xl font-bold mb-4">Vectors & Operations</h3>
+                    <p class="text-gray-600 mb-2"><strong>Vectors</strong> have both magnitude (length) and direction. A 2D vector is represented as &lt;x, y&gt;.</p>
+                    <p class="text-gray-600 mb-2"><strong>Magnitude:</strong> For vector v = &lt;x, y&gt;, its magnitude is |v| = square root of (x<sup>2</sup> + y<sup>2</sup>).</p>
+                    <p class="text-gray-600 mb-4"><strong>Operations:</strong></p>
+                    <ul class="list-disc list-inside text-gray-600 mb-4">
+                        <li>Addition: &lt;u<sub>1</sub>, u<sub>2</sub>&gt; + &lt;v<sub>1</sub>, v<sub>2</sub>&gt; = &lt;u<sub>1</sub>+v<sub>1</sub>, u<sub>2</sub>+v<sub>2</sub>&gt;</li>
+                        <li>Subtraction: &lt;u<sub>1</sub>, u<sub>2</sub>&gt; - &lt;v<sub>1</sub>, v<sub>2</sub>&gt; = &lt;u<sub>1</sub>-v<sub>1</sub>, u<sub>2</sub>-v<sub>2</sub>&gt;</li>
+                        <li>Scalar Multiplication: c &lt;x, y&gt; = &lt;cx, cy&gt;</li>
+                        <li>Dot Product: u · v = u<sub>1</sub>v<sub>1</sub> + u<sub>2</sub>v<sub>2</sub></li>
+                    </ul>
+                    <h4 class="text-xl font-semibold mb-2">Example: Vector Operations for A=&lt;3,-1&gt;, B=&lt;2,5&gt;</h4>
+                    <p class="text-gray-700 mb-2">Sum: &lt;3+2, -1+5&gt; = &lt;5, 4&gt;</p>
+                    <p class="text-gray-700 mb-2">Difference: &lt;3-2, -1-5&gt; = &lt;1, -6&gt;</p>
+                    <p class="text-gray-700 mb-4">Dot Product: (3)(2) + (-1)(5) = 6 - 5 = 1</p>
+                    <h4 class="text-xl font-semibold mb-2">Practice Tool: Vector Operations</h4>
+                    <p class="text-gray-600 mb-4">Perform basic operations on 2D vectors.</p>
+                    <div class="space-y-4">
+                        <input type="text" id="vector1" placeholder="Vector A (e.g., 3,-1)" class="input-field">
+                        <input type="text" id="vector2" placeholder="Vector B (e.g., 2,5)" class="input-field">
+                        <button id="calc-vectors" class="btn w-full">Calculate</button>
+                    </div>
+                    <div id="vector-result" class="solution-box mt-4 hidden"></div>
+                    <h4 class="text-xl font-semibold mb-2 mt-6">Practice Exercises:</h4>
+                    <ol class="exercise-list text-gray-700">
+                        <li>A square has vertices at (0,0), (5,0), (5,5), and (0,5). What are the new coordinates if scaled by a factor of 3?</li>
+                        <li>Find the area of the triangle formed by the points A(0,0), B(4,0), and C(4,3).</li>
+                    </ol>
+                </div>
+            </div>
+        </section>
+
+        <section id="calculus" class="content-section min-h-screen">
+            <h2 class="text-4xl font-bold mb-6 border-b-4 border-accent pb-2">Calculus</h2>
+            <div class="section-intro">
+                <p>Calculus is the study of change. It provides tools to understand how quantities change and accumulate. This section introduces functions, limits, differentiation (rates of change, optimization), and integration (accumulation, areas).</p>
+            </div>
+            <div class="grid md:grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="card p-6">
+                    <h3 class="text-2xl font-bold mb-4">Introduction to Functions & Limits</h3>
+                    <p class="text-gray-600 mb-2">A <strong>function</strong> is a rule that assigns a unique output (y) for every input (x), often written as y=f(x). Types include linear (y=mx+c), polynomial, power (x<sup>n</sup>), rational (P(x)/Q(x)), exponential (a ⋅ b<sup>x</sup>), and logarithmic.</p>
+                    <h4 class="text-xl font-semibold mb-2">Example: Function Types</h4>
+                    <p class="text-gray-700 mb-2">Linear: f(x) = 2x+3</p>
+                    <p class="text-gray-700 mb-4">Exponential: P(t) = P<sub>0</sub> e<sup>rt</sup> (e.g., population growth)</p>
+                    <p class="text-gray-600 mb-2"><strong>Limits</strong> describe a function's behavior as input approaches a certain value or infinity. They are foundational for derivatives and integrals.</p>
+                    <h4 class="text-xl font-semibold mb-2">Example: Limits by Factorization</h4>
+                    <p class="text-gray-700 mb-2">Limit as x approaches 2 of (x<sup>2</sup>-4)/(x-2) = Limit as x approaches 2 of ((x+2)(x-2))/(x-2) = Limit as x approaches 2 of (x+2) = 2+2 = 4</p>
+                     <h4 class="text-xl font-semibold mb-2 mt-6">Practice Exercises:</h4>
+                    <ol class="exercise-list text-gray-700">
+                        <li>Identify the type of function: f(x) = 5x - 7, g(x) = (x<sup>3</sup> - 1)/(x<sup>2</sup> + 4), h(x) = sin(2x).</li>
+                        <li>Evaluate the limit: Limit as x approaches 3 of (x<sup>2</sup> - 9)/(x - 3).</li>
+                        <li>Evaluate the limit as x approaches infinity: Limit as x approaches infinity of (5x<sup>3</sup> + 2x - 1)/(2x<sup>3</sup> - x<sup>2</sup> + 7).</li>
+                    </ol>
+                </div>
+                <div class="card p-6">
+                    <h3 class="text-2xl font-bold mb-4">Differentiation & Maxima/Minima</h3>
+                    <p class="text-gray-600 mb-2"><strong>Differentiation</strong> finds the <strong>derivative</strong> (f'(x) or dy/dx), which represents the instantaneous rate of change and the slope of the tangent line. From first principles: f'(x) = Limit as h approaches 0 of (f(x+h) - f(x))/h.</p>
+                    <h4 class="text-xl font-semibold mb-2">Key Rules:</h4>
+                    <ul class="list-disc list-inside text-gray-600 mb-4">
+                        <li><strong>Power Rule:</strong> d/dx (x<sup>n</sup>) = nx<sup>n-1</sup></li>
+                        <li><strong>Product Rule:</strong> d/dx [g(x)h(x)] = g'(x)h(x) + g(x)h'(x)</li>
+                        <li><strong>Quotient Rule:</strong> d/dx [g(x)/h(x)] = (h(x)g'(x) - g(x)h'(x)) / [h(x)]<sup>2</sup></li>
+                        <li><strong>Chain Rule:</strong> d/dx [g(h(x))] = g'(h(x)) x h'(x)</li>
+                    </ul>
+                    <p class="text-gray-600 mb-2"><strong>Maxima and Minima:</strong> Derivatives are used to find critical points (f'(x)=0 or undefined), which are potential max/min points. The <strong>Second Derivative Test</strong> (f''(x)) helps classify them: f''(x)>0 for minimum, f''(x)<0 for maximum.</p>
+                    <h4 class="text-xl font-semibold mb-2">Practice Tool: Differentiation & Maxima/Minima</h4>
+                    <p class="text-gray-600 mb-4">Enter a simple polynomial function (e.g., x^3 - 3x^2) to see its derivative and analysis of critical points.</p>
+                    <input type="text" id="maxmin-func" placeholder="e.g., x^3 - 3x^2" class="input-field mb-4">
+                    <button id="calc-maxmin" class="btn w-full">Analyze</button>
+                    <div id="maxmin-result" class="solution-box mt-4 hidden"></div>
+                    <h4 class="text-xl font-semibold mb-2 mt-6">Practice Exercises:</h4>
+                    <ol class="exercise-list text-gray-700">
+                        <li>Find the derivative of f(x) = 5x<sup>3</sup> - 4x<sup>2</sup> + 7x - 1.</li>
+                        <li>Differentiate f(x) = (x<sup>2</sup>+1)(3x-2) using the product rule.</li>
+                        <li>Find and classify the critical points of f(x) = x<sup>3</sup> - 3x<sup>2</sup> - 9x + 5.</li>
+                    </ol>
+                </div>
+                <div class="card p-6 md:col-span-2 lg:col-span-2">
+                    <h3 class="text-2xl font-bold mb-4">Integration</h3>
+                    <p class="text-gray-600 mb-2"><strong>Integration</strong> is the reverse of differentiation. It finds the accumulated quantity or the area under a curve. An <strong>Indefinite Integral (Antiderivative)</strong> is a family of functions: Integral of f(x) dx = F(x) + C. A <strong>Definite Integral</strong> calculates the exact area between bounds: Integral from a to b of f(x) dx = F(b) - F(a).</p>
+                    <h4 class="text-xl font-semibold mb-2">Basic Rules:</h4>
+                    <ul class="list-disc list-inside text-gray-600 mb-4">
+                        <li><strong>Power Rule:</strong> Integral of x<sup>n</sup> dx = x<sup>n+1</sup>/(n+1) + C (for n not equal to -1)</li>
+                        <li><strong>Reciprocal Rule:</strong> Integral of (1/x) dx = ln|x| + C</li>
+                        <li><strong>Exponential Rule:</strong> Integral of e<sup>x</sup> dx = e<sup>x</sup> + C</li>
+                    </ul>
+                    <h4 class="text-xl font-semibold mb-2">Techniques:</h4>
+                    <p class="text-600 mb-2"><strong>Substitution (u-substitution):</strong> For composite functions, like reverse of chain rule. Integral of f(g(x))g'(x)dx becomes Integral of f(u)du by u=g(x).</p>
+                    <p class="text-gray-600 mb-4"><strong>Integration by Parts:</strong> For product of functions. Integral of u dv = uv - Integral of v du.</p>
+                    <h4 class="text-xl font-semibold mb-2">Practice Tool: Integration</h4>
+                    <p class="text-gray-600 mb-4">Find the indefinite integral of a polynomial function.</p>
+                     <input type="text" id="int-func" placeholder="e.g., x^3 + 5x - 2" class="input-field mb-4">
+                    <button id="calc-integral" class="btn w-full">Integrate</button>
+                    <div id="int-result" class="solution-box mt-4 hidden"></div>
+                    <h4 class="text-xl font-semibold mb-2 mt-6">Practice Exercises:</h4>
+                    <ol class="exercise-list text-gray-700">
+                        <li>Find the indefinite integral: Integral of (x<sup>3</sup> + 5x - 2) dx.</li>
+                        <li>Evaluate the definite integral: Integral from 1 to 3 of (2x+1) dx.</li>
+                        <li>Use u-substitution to find: Integral of 2x(x<sup>2</sup>+1)<sup>3</sup> dx.</li>
+                    </ol>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const navLinks = document.querySelectorAll('.nav-link');
+            const sections = document.querySelectorAll('.content-section');
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        navLinks.forEach(link => {
+                            link.classList.remove('active');
+                            if (link.getAttribute('href').substring(1) === entry.target.id) {
+                                link.classList.add('active');
+                            }
+                        });
+                    }
+                });
+            }, { threshold: 0.5 });
+
+            sections.forEach(section => observer.observe(section));
+
+            function gcd(a, b) {
+                return b === 0 ? a : gcd(b, a % b);
+            }
+
+            function lcm(a, b) {
+                if (a === 0 || b === 0) return 0;
+                return Math.abs(a * b) / gcd(a, b);
+            }
+
+            // Helper function to safely add event listeners
+            function safeAddEventListener(elementId, eventType, handler) {
+                const element = document.getElementById(elementId);
+                if (element) {
+                    element.addEventListener(eventType, handler);
+                } else {
+                    console.error(`Element with ID '${elementId}' not found.`);
+                }
+            }
+
+            safeAddEventListener('calc-gcd-lcm', 'click', () => {
+                const num1 = parseInt(document.getElementById('num1').value);
+                const num2 = parseInt(document.getElementById('num2').value);
+                const resultBox = document.getElementById('gcd-lcm-result');
+                if (!isNaN(num1) && !isNaN(num2)) {
+                    const gcdResult = gcd(num1, num2);
+                    const lcmResult = lcm(num1, num2);
+                    resultBox.innerHTML = `GCD: ${gcdResult}\nLCM: ${lcmResult}`;
+                    resultBox.classList.remove('hidden');
+                } else {
+                    resultBox.innerHTML = 'Please enter valid numbers.';
+                    resultBox.classList.remove('hidden');
+                }
+            });
+
+            safeAddEventListener('calc-ap', 'click', () => {
+                const start = parseFloat(document.getElementById('ap-start').value);
+                const diff = parseFloat(document.getElementById('ap-diff').value);
+                const count = parseInt(document.getElementById('ap-terms').value);
+                const resultBox = document.getElementById('ap-result');
+                if (![start, diff, count].some(isNaN)) {
+                    let sequence = [];
+                    let sum = 0;
+                    for (let i = 0; i < count; i++) {
+                        const term = start + i * diff;
+                        sequence.push(term);
+                        sum += term;
+                    }
+                    resultBox.innerHTML = `Sequence: ${sequence.join(', ')}\nSum: ${sum}`;
+                    resultBox.classList.remove('hidden');
+                } else {
+                    resultBox.innerHTML = 'Please enter valid numbers.';
+                    resultBox.classList.remove('hidden');
+                }
+            });
+
+            safeAddEventListener('calc-gp', 'click', () => {
+                const start = parseFloat(document.getElementById('gp-start').value);
+                const ratio = parseFloat(document.getElementById('gp-ratio').value);
+                const count = parseInt(document.getElementById('gp-terms').value);
+                const resultBox = document.getElementById('gp-result');
+                if (![start, ratio, count].some(isNaN)) {
+                    let sequence = [];
+                    let sum = 0;
+                    for (let i = 0; i < count; i++) {
+                        const term = start * Math.pow(ratio, i);
+                        sequence.push(term.toFixed(4));
+                        sum += term;
+                    }
+                     resultBox.innerHTML = `Sequence: ${sequence.join(', ')}\nSum: ${sum.toFixed(4)}`;
+                    resultBox.classList.remove('hidden');
+                } else {
+                    resultBox.innerHTML = 'Please enter valid numbers.';
+                    resultBox.classList.remove('hidden');
+                }
+            });
+            
+            const probCtx = document.getElementById('probabilityChart');
+            let probChart;
+            const explanationDiv = document.getElementById('prob-explanation');
+
+            function createBinomialChart() {
+                const n = 10;
+                const p = 0.5;
+                const labels = Array.from({length: n + 1}, (_, i) => i);
+                const data = labels.map(k => {
+                    const combinations = (n, k) => {
+                        if (k < 0 || k > n) return 0;
+                        if (k === 0 || k === n) return 1;
+                        if (k > n / 2) k = n - k;
+                        let res = 1;
+                        for (let i = 1; i <= k; i++) {
+                            res = res * (n - i + 1) / i;
+                        }
+                        return res;
+                    };
+                    return combinations(n, k) * Math.pow(p, k) * Math.pow(1 - p, n - k);
+                });
+
+                if (probChart) probChart.destroy();
+                if (probCtx) { // Check if probCtx exists before getting context
+                    probChart = new Chart(probCtx.getContext('2d'), {
+                        type: 'bar',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: `Binomial Distribution (n=10, p=0.5)`,
+                                data: data,
+                                backgroundColor: 'rgba(224, 122, 95, 0.6)',
+                                borderColor: 'rgba(224, 122, 95, 1)',
+                                borderWidth: 1
+                            }]
+                        },
+                        options: { maintainAspectRatio: false }
+                    });
+                } else {
+                    console.error("Canvas element for probability chart not found.");
+                }
+                explanationDiv.innerHTML = `<strong>Binomial Distribution:</strong> Models the number of successes in a fixed number of independent trials. Useful for scenarios like coin flips or quality control checks.`;
+            }
+
+            function createNormalChart() {
+                const dataPoints = 100;
+                const mu = 0;
+                const sigma = 1;
+                const labels = [];
+                const data = [];
+                for(let i = 0; i < dataPoints; i++) {
+                    const x = mu - 3 * sigma + (6 * sigma * i) / dataPoints;
+                    labels.push(x.toFixed(2));
+                    data.push((1 / (sigma * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * Math.pow((x - mu) / sigma, 2)));
+                }
+
+                if (probChart) probChart.destroy();
+                if (probCtx) { // Check if probCtx exists before getting context
+                    probChart = new Chart(probCtx.getContext('2d'), {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: `Standard Normal Distribution (μ=0, σ=1)`,
+                                data: data,
+                                borderColor: 'rgba(61, 64, 91, 1)',
+                                backgroundColor: 'rgba(61, 64, 91, 0.2)',
+                                fill: true,
+                                pointRadius: 0
+                            }]
+                        },
+                        options: { maintainAspectRatio: false }
+                    });
+                } else {
+                    console.error("Canvas element for probability chart not found.");
+                }
+                explanationDiv.innerHTML = `<strong>Normal Distribution:</strong> A continuous probability distribution (bell curve) that describes many natural phenomena, such as height, blood pressure, or measurement errors.`;
+            }
+            
+            safeAddEventListener('show-binomial', 'click', createBinomialChart);
+            safeAddEventListener('show-normal', 'click', createNormalChart);
+            
+            // Initial chart creation
+            if (probCtx) { 
+                createBinomialChart();
+            } else {
+                console.error("Canvas element for probability chart not found. Chart will not be initialized.");
+            }
+
+
+            safeAddEventListener('calc-geometry', 'click', () => {
+                const p1Str = document.getElementById('point1').value.split(',').map(Number);
+                const p2Str = document.getElementById('point2').value.split(',').map(Number);
+                const resultBox = document.getElementById('geometry-result');
+                if(p1Str.length === 2 && p2Str.length === 2 && !p1Str.some(isNaN) && !p2Str.some(isNaN)) {
+                    const [x1, y1] = p1Str;
+                    const [x2, y2] = p2Str;
+                    const distance = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+                    const slope = (x2 - x1) === 0 ? 'Undefined' : (y2 - y1) / (x2 - x1); // Handle vertical line
+                    resultBox.innerHTML = `Distance: ${distance.toFixed(4)}\nSlope: ${typeof slope === 'number' ? slope.toFixed(4) : slope}`;
+                    resultBox.classList.remove('hidden');
+                } else {
+                    resultBox.innerHTML = 'Invalid input. Use format "x,y".';
+                    resultBox.classList.remove('hidden');
+                }
+            });
+
+            safeAddEventListener('calc-vectors', 'click', () => {
+                const v1Str = document.getElementById('vector1').value.split(',').map(Number);
+                const v2Str = document.getElementById('vector2').value.split(',').map(Number);
+                const resultBox = document.getElementById('vector-result');
+                if(v1Str.length === 2 && v2Str.length === 2 && !v1Str.some(isNaN) && !v2Str.some(isNaN)) {
+                    const [x1, y1] = v1Str;
+                    const [x2, y2] = v2Str;
+                    const sum = `<${x1+x2}, ${y1+y2}>`;
+                    const diff = `<${x1-x2}, ${y1-y2}>`;
+                    const dot = x1*x2 + y1*y2;
+                    resultBox.innerHTML = `A + B = ${sum}\nA - B = ${diff}\nA · B = ${dot}`;
+                    resultBox.classList.remove('hidden');
+                } else {
+                    resultBox.innerHTML = 'Invalid input. Use format "x,y".';
+                    resultBox.classList.remove('hidden');
+                }
+            });
+
+            const parsePolynomial = (str) => {
+                const terms = {};
+                // Updated regex to better handle leading signs and coefficients
+                const regex = /([+-]?\s*(?:\d*\.?\d*)?)\s*(?:x(?:\^(\d+))?)?/g;
+                let match;
+                while ((match = regex.exec(str)) !== null) {
+                    let coeffStr = match[1] || '';
+                    let power = match[2] ? parseInt(match[2]) : (match[0].includes('x') ? 1 : 0);
+                    
+                    coeffStr = coeffStr.replace(/\s/g, '');
+                    if (coeffStr === '' || coeffStr === '+') coeffStr = '1';
+                    if (coeffStr === '-') coeffStr = '-1';
+                    
+                    let coeff = parseFloat(coeffStr);
+                    if (isNaN(coeff)) coeff = 0; // Handle cases where coeffStr is not a valid number
+                    terms[power] = (terms[power] || 0) + coeff;
+                }
+                return terms;
+            };
+
+            const formatPolynomial = (terms) => {
+                const sortedPowers = Object.keys(terms).map(Number).sort((a,b) => b - a);
+                let formatted = sortedPowers.map((p, i) => {
+                    const c = terms[p];
+                    if (c === 0) return '';
+                    let cStr = Math.abs(c);
+                    // Special handling for coefficient 1 (or -1) for powers > 0
+                    if (cStr === 1 && p > 0) cStr = ''; 
+                    const sign = (c < 0) ? '-' : (i > 0 ? '+' : '');
+                    const xPart = p > 0 ? (p === 1 ? 'x' : `x^${p}`) : '';
+                    if (c === 0) return ''; // Ensure zero coefficients don't produce output
+                    return `${sign}${cStr}${xPart}`;
+                }).filter(Boolean); // Filter out empty strings from 0 coefficients
+
+                if (formatted.length === 0) return '0'; // If all terms are zero after processing
+                return formatted.join(' ').replace(/^\+ /, ''); // Remove leading '+' if first term is positive
+            };
+
+
+            safeAddEventListener('calc-derivative', 'click', () => {
+                const funcStr = document.getElementById('diff-func').value;
+                const terms = parsePolynomial(funcStr);
+                const derivativeTerms = {};
+                for (const p in terms) {
+                    if (p > 0) {
+                        derivativeTerms[p-1] = terms[p] * p;
+                    }
+                }
+                document.getElementById('diff-result').innerHTML = formatPolynomial(derivativeTerms) || '0';
+                document.getElementById('diff-result').classList.remove('hidden');
+            });
+
+            safeAddEventListener('calc-integral', 'click', () => {
+                const funcStr = document.getElementById('int-func').value;
+                const terms = parsePolynomial(funcStr);
+                const integralTerms = {};
+                for (const p in terms) {
+                    const newPower = parseInt(p) + 1;
+                    integralTerms[newPower] = terms[p] / newPower;
+                }
+                document.getElementById('int-result').innerHTML = formatPolynomial(integralTerms) + ' + C';
+                document.getElementById('int-result').classList.remove('hidden');
+            });
+            
+             safeAddEventListener('calc-maxmin', 'click', () => {
+                const funcStr = document.getElementById('maxmin-func').value;
+                const terms = parsePolynomial(funcStr);
+                const resultBox = document.getElementById('maxmin-result');
+                
+                const derivativeTerms = {};
+                for (const p in terms) {
+                    if (p > 0) derivativeTerms[p-1] = terms[p] * p;
+                }
+                
+                const secondDerivativeTerms = {};
+                for(const p in derivativeTerms) {
+                    if (p > 0) secondDerivativeTerms[p-1] = derivativeTerms[p] * p;
+                }
+
+                let resultText = `f(x) = ${formatPolynomial(terms)}\n`;
+                resultText += `f'(x) = ${formatPolynomial(derivativeTerms)}\n`;
+                resultText += `f''(x) = ${formatPolynomial(secondDerivativeTerms)}\n\n`;
+                resultText += `This tool primarily calculates derivatives. Finding exact critical points (roots of f'(x)) for higher-degree polynomials requires numerical methods not directly implemented here. For classification, evaluate f''(x) at the critical points: positive for min, negative for max.`;
+
+                resultBox.innerHTML = resultText;
+                resultBox.classList.remove('hidden');
+            });
+
+
+        });
+    </script>
+</body>
+</html>
